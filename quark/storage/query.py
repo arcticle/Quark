@@ -1,10 +1,10 @@
 from fnmatch import fnmatch
 from future.utils import viewitems
-from quark.storage.query_selectors import selectors
+from quark.storage.query_selector import selectors
 
 
 class QueryCommand(object):
-    def __init__(self, query):
+    def __init__(self, query_criteria):
         
         self.query_handlers = {
             dict  : self._query_dict,
@@ -12,7 +12,7 @@ class QueryCommand(object):
             float : self._query_numeric,
             str   : self._query_string
         }
-        self.query = Query(query)
+        self.query = Query(query_criteria)
 
     def execute(self, data):
         query_handler = self.query_handlers[type(data)]
@@ -37,27 +37,11 @@ class QueryCommand(object):
         for query_operator in self.query.query_operators:
             return query_operator(data)
 
-        # selector, value = self._parse_filter(self.query)
-        # if selector.__name__ != "str_":
-        #     raise ValueError("Invalid query operation. " + 
-        #         "'{}' selectors can't be executed on 'str' type".format(selector))
-        # return selector(data, value)
-
-
-    # def _parse_filter(self, filter):
-    #     if isinstance(filter, dict):
-    #         selector = next(iter(filter))
-    #         value    = filter[selector]
-    #     else:
-    #         selector = "$eq"
-    #         value    = filter
-    #     return self.selectors[selector], value
-
 
 class Query(object):
-    def __init__(self, query):
+    def __init__(self, query_criteria):
         self.query_operators = []
-        self._parse_query(query)
+        self._parse_query(query_criteria)
 
     def _parse_query(self, query):
         if not isinstance(query, dict):

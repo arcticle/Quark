@@ -2,27 +2,6 @@ from attrdict import AttrDict
 from quark.storage import CollectionObject, ComplexObject, KeyValueObject
 
 
-
-
-data = {
-    "repositories": [
-        {"id":1, "name":"Repo-1", "dir":"c:/repos/repo1"},
-        {"id":2, "name":"Repo-2", "dir":"c:/repos/repo2"},
-        {"id":3, "name":"Repo-3", "dir":"c:/repos/repo3"}
-    ],
-
-    "user": {"name":"John Doe", "email":"john@doe.com"},
-
-    "repo_limit" : 10,
-
-    "tags" : [
-        "Data Analytics",
-        "Artificial Intelligence"
-    ]
-}
-
-
-
 class StorageObjectFactory(object):
     def __init__(self, object_types=None):
         self._object_type_map = {}

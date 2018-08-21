@@ -36,10 +36,10 @@ def gte(actual, excpected):
 def lte(actual, excpected):
     return actual <= excpected
 
-@selectors.add("$in_")
+@selectors.add("$in")
 def in_(actual, excpected):
     return actual in excpected
 
-@selectors.add("$str_")
+@selectors.add("$str")
 def str_(actual, excpected):
     return fnmatch(actual, excpected)

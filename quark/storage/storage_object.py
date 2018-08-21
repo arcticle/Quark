@@ -1,5 +1,6 @@
 import six, abc
 from future.utils import viewitems
+from future.builtins import super
 from quark.storage.query import QueryCommand
 
 
@@ -24,11 +25,7 @@ class CollectionObject(StorageObject):
         super().__init__(id, storage)
 
     def find(self, query):
-        items = []
-        cmd = QueryCommand(query)
-        for item in self.data:
-            if cmd.execute(item):
-                items.append(item)
+        items, _ = self._find(query)
         return items
 
     def find_one(self, query):
@@ -38,9 +35,24 @@ class CollectionObject(StorageObject):
                 return item
 
     def update(self, query, modifications):
-        items = self.find(query)
-        for item in items:
-            self._update_dict(item, modifications)
+        _, mask = self._find(query)
+        for index, unmasked in enumerate(mask):
+            if unmasked:
+                item = self.data[index]
+                if isinstance(item, dict):
+                    self._update_dict(item, modifications)
+                else:
+                    self.data[index] = modifications
+
+    def _find(self, query):
+        items, mask = [], []
+        cmd = QueryCommand(query)
+        for item in self.data:
+            result = cmd.execute(item)
+            if result == True:    
+                items.append(item)
+            mask.append(result)
+        return items, mask
 
     def create(self, obj):
         self.data.append(obj)
@@ -68,12 +80,13 @@ class CollectionObject(StorageObject):
 class KeyValueObject(StorageObject):
     def __init__(self, id, storage):
         super().__init__(id, storage)
+        setattr(self, "value", self.data)
 
-    def get(self):
-        return self.data
+    def __setattr__(self, name, value):
+        if name == "value":
+            self.data = value
+        super().__setattr__(name, value)
 
-    def update(self, value):
-        self.data = value
 
 
 class ComplexObject(StorageObject):
@@ -83,9 +96,9 @@ class ComplexObject(StorageObject):
         for attr, value in viewitems(self.data):
             setattr(self, attr, value)
 
-    def get(self, obj):
-        return getattr(self, obj)
+    def get(self, attr):
+        return getattr(self, attr)
 
-    def update(self, obj, value):
-        self.data[obj] = value
-        setattr(self, obj, value)
+    def set(self, attr, value):
+        self.data[attr] = value
+        setattr(self, attr, value)
