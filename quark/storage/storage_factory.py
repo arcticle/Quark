@@ -59,3 +59,4 @@ class Storage(object):
             storage_object = \
                 self._object_factory.create(object_name, data)
             setattr(self, object_name, storage_object)
+

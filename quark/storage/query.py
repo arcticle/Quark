@@ -1,28 +1,18 @@
 from fnmatch import fnmatch
 from future.utils import viewitems
-
+from quark.storage.query_selectors import selectors
 
 
 class QueryCommand(object):
     def __init__(self, query):
         
-        self.selectors = {
-            "$eq"  : QuerySelector.eq,
-            "$gt"  : QuerySelector.gt,
-            "$lt"  : QuerySelector.lt,
-            "$gte" : QuerySelector.gte,
-            "$lte" : QuerySelector.lte,
-            "$in"  : QuerySelector.in_,
-            "$str" : QuerySelector.str_
-        }
-
         self.query_handlers = {
             dict  : self._query_dict,
             int   : self._query_numeric,
             float : self._query_numeric,
             str   : self._query_string
         }
-        self.query = query
+        self.query = Query(query)
 
     def execute(self, data):
         query_handler = self.query_handlers[type(data)]
@@ -34,60 +24,76 @@ class QueryCommand(object):
 
 
     def _query_dict(self, data):
-        for field, filter in viewitems(self.query):
-            selector, value = self._parse_filter(filter)
-            if selector(data[field], value) == False:
+        for query_operator in self.query.query_operators:
+            if query_operator(data) == False:
                 return False
         return True
 
     def _query_numeric(self, data):
-        selector, value = self._parse_filter(self.query)
-        return selector(data, value)
+        for query_operator in self.query.query_operators:
+            return query_operator(data)
 
     def _query_string(self, data):
-        selector, value = self._parse_filter(self.query)
-        if selector.__name__ != "str_":
-            raise ValueError("Invalid query operation. " + 
-                "'{}' selectors can't be executed on 'str' type".format(selector))
-        return selector(data, value)
+        for query_operator in self.query.query_operators:
+            return query_operator(data)
 
+        # selector, value = self._parse_filter(self.query)
+        # if selector.__name__ != "str_":
+        #     raise ValueError("Invalid query operation. " + 
+        #         "'{}' selectors can't be executed on 'str' type".format(selector))
+        # return selector(data, value)
+
+
+    # def _parse_filter(self, filter):
+    #     if isinstance(filter, dict):
+    #         selector = next(iter(filter))
+    #         value    = filter[selector]
+    #     else:
+    #         selector = "$eq"
+    #         value    = filter
+    #     return self.selectors[selector], value
+
+
+class Query(object):
+    def __init__(self, query):
+        self.query_operators = []
+        self._parse_query(query)
+
+    def _parse_query(self, query):
+        if not isinstance(query, dict):
+            raise ValueError("Invalid query object specified." +
+                "Query object should be of type 'dict' not '{}'".format(type(query).__name__))
+
+        for field, filter in viewitems(query):
+            if field in selectors.operators:
+                selector_name = field
+                field_name    = None
+                filter_value  = filter
+            else:
+                selector_name, filter_value = self._parse_filter(filter)
+                field_name = field
+
+            self.query_operators.append(
+                self._query_operator(selectors.get(selector_name),
+                                    field_name,
+                                    filter_value))
 
     def _parse_filter(self, filter):
         if isinstance(filter, dict):
-            selector = next(iter(filter))
-            value    = filter[selector]
+            selector_name   = next(iter(filter))
+            filter_value    = filter[selector_name]
         else:
-            selector = "$eq"
-            value    = filter
-        return self.selectors[selector], value
+            selector_name   = "$eq"
+            filter_value    = filter
+        return selector_name, filter_value
+
+    def _query_operator(self, selector, field, filter_value):
+        def call(data):
+            if field is None:
+                actual_value = data
+            else:
+                actual_value = data[field]
+            return selector(actual_value, filter_value)
+        return call
 
 
-class QuerySelector(object):
-
-    @staticmethod
-    def eq(actual, excpected):
-        return actual == excpected
-
-    @staticmethod
-    def gt(actual, excpected):
-        return actual > excpected
-        
-    @staticmethod
-    def lt(actual, excpected):
-        return actual < excpected
-
-    @staticmethod
-    def gte(actual, excpected):
-        return actual >= excpected
-
-    @staticmethod
-    def lte(actual, excpected):
-        return actual <= excpected
-
-    @staticmethod
-    def in_(actual, excpected):
-        return actual in excpected
-
-    @staticmethod
-    def str_(actual, excpected):
-        return fnmatch(actual, excpected)
