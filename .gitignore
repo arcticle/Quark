@@ -331,3 +331,6 @@ ASALocalRun/
 
 # VisualStudioCode working folder
 .vscode/
+
+# pytest working folder
+.pytest_cache/
