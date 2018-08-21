@@ -1,0 +1,6 @@
+
+
+
+
+class ContextException(Exception):
+    pass
