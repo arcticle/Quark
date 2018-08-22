@@ -189,3 +189,14 @@ def test_collectionobject_complextype_update_case2():
     assert storage.data["repositories"][2]["name"] == "Repo-Updated"
     assert storage.data["repositories"][1]["dir"] == "Updated"
     assert storage.data["repositories"][2]["dir"] == "Updated"
+
+def test_collectionobject_complextype_create_case1():
+    storage = Storage(copy.deepcopy(data), StorageObjectFactory())
+    storage.repositories.create({"id":4, "name":"Repo-4", "dir":"c:/repos/repo4"})
+    assert storage.data["repositories"][3] == {"id":4, "name":"Repo-4", "dir":"c:/repos/repo4"}
+
+def test_collectionobject_simpletype_create_case1():
+    storage = Storage(copy.deepcopy(data), StorageObjectFactory())
+    storage.tags.create("New Tag")
+    assert storage.data["tags"] == ["Data Analytics 101","Artificial Intelligence","Arcticle","Quark", "New Tag"]
+
