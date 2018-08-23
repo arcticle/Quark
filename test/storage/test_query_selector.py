@@ -1,33 +1,40 @@
-import pytest
-from quark.storage.query_selector import selectors
+import unittest
+from quark.storage.query_operators import operators
 
-operators = [("$eq", "eq"), ("$gt","gt"), ("$lt","lt"), ("$gte","gte"), ("$lte","lte"), ("$in","in_"), ("$str","str_")]
+class TestQuerySelector(unittest.TestCase):
+    def setUp(self):
+        self._operators = {
+            "$eq" : "==",
+            "$gt" : ">",
+            "$lt" : "<",
+            "$gte": ">=",
+            "$lte": "<=",
+            "$in" : "in"}
 
-@pytest.fixture(params=operators)
-def operator(request):
-    return request.param
+    def test_operator_eq(self):
+        _operator = operators["$eq"]
+        assert _operator == self._operators["$eq"]
 
+    def test_operator_gt(self):
+        _operator = operators["$gt"]
+        assert _operator == self._operators["$gt"]
 
-def test_selector_get(operator):
-    selector = selectors.get(operator[0])
-    assert selector.__name__ == operator[1]
+    def test_operator_lt(self):
+        _operator = operators["$lt"]
+        assert _operator == self._operators["$lt"]
 
+    def test_operator_gte(self):
+        _operator = operators["$gte"]
+        assert _operator == self._operators["$gte"]
 
-operations = [
-    ("$eq", [(1,1,True), (1,2,False), (2,1,False)]),
-    ("$gt", [(1,1,False), (1,2,False), (2,1,True)]),
-    ("$lt", [(1,1,False), (1,2,True), (2,1,False)]),
-    ("$gte", [(1,1,True), (1,2,False), (2,1,True)]),
-    ("$lte", [(1,1,True), (1,2,True), (2,1,False)]),
-    ("$in", [(1,[1,2],True), (1,[2,3],False), (1,[],False)]),
-    ("$str", [("foobar","*bar",True), ("foobar","f??bar",True), ("foobar","*oo*",True), ("foobar","fo??bar*",False)]),
-]
+    def test_operator_lte(self):
+        _operator = operators["$lte"]
+        assert _operator == self._operators["$lte"]
 
-@pytest.fixture(params=operations)
-def operation(request):
-    return request.param
+    def test_operator_in(self):
+        _operator = operators["$in"]
+        assert _operator == self._operators["$in"]
 
-def test_selector_execute(operation):
-    selector = selectors.get(operation[0])
-    for left, right, expected in operation[1]:
-        assert selector(left, right) == expected
+    def test_operator_str(self):
+        operator_function = operators["$str"]
+        assert operator_function("field","*w?ldcard*") == "operators.str('field','*w?ldcard*')"
