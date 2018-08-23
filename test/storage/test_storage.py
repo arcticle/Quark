@@ -199,6 +199,7 @@ def test_collectionobject_simpletype_create_case1():
     storage.tags.create("New Tag")
     assert storage.data["tags"] == ["Data Analytics 101","Artificial Intelligence","Arcticle","Quark", "New Tag"]
 
-# def test_collectionobject_complextype_query_invalid():
-#     result = storage.tags.find({"id":{"$gt":2}})
-#     assert result == [{"id":3, "name":"Repo-3", "dir":"c:/repos/repo3"}]
+def test_collectionobject_complextype_invalid_query():
+    from quark.exceptions.storage_exceptions import InvalidExpressionException
+    with pytest.raises(InvalidExpressionException):
+        result = storage.tags.find({"id":{"$gt":2}})

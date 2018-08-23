@@ -44,6 +44,13 @@ class CollectionObject(StorageObject):
                 else:
                     self.data[index] = modifications
 
+    def create(self, obj):
+        self.data.append(obj)
+
+    def delete(self, obj):
+        item = self.find(obj)
+        self.data.remove(item)
+
     def _find(self, query):
         items, mask = [], []
         cmd = QueryCommand(query)
@@ -54,24 +61,10 @@ class CollectionObject(StorageObject):
             mask.append(result)
         return items, mask
 
-    def create(self, obj):
-        self.data.append(obj)
-
-    def delete(self, obj):
-        item = self.find(obj)
-        self.data.remove(item)
-
     def _update_dict(self, dict, modifications):
         for key, value in viewitems(modifications):
             if key in dict:
                 dict[key] = value
-
-    def _get_dict_item(self, item, obj):
-        obj_elements = set(viewitems(obj))
-        item_elements = set(viewitems(item))
-        intersection = item_elements.union(obj_elements)
-        if len(intersection) <= len(item):
-            return item
 
     def __iter__(self):
         return self.data.__iter__()

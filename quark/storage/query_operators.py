@@ -22,34 +22,41 @@ operators = QuerySelector()
 
 @operators.add("$eq")
 def eq(left, right):
-    return "{} == {}".format(left, right)
+    return left == right
 
 @operators.add("$gt")
 def gt(left, right):
-    return "{} > {}".format(left, right)
+    return left > right
     
 @operators.add("$lt")
 def lt(left, right):
-    return "{} < {}".format(left, right)
+    return left < right
 
 @operators.add("$gte")
 def gte(left, right):
-    return "{} >= {}".format(left, right)
+    return left >= right
 
 @operators.add("$lte")
 def lte(left, right):
-    return "{} <= {}".format(left, right)
+    return left <= right
 
 @operators.add("$in")
 def in_(left, right):
-    if isinstance(left, str):
-        left = "'{}'".format(left)
-        
-    return "{} in {}".format(left, str(right))
+    return left in right
 
 @operators.add("$str")
 def str_(left, right):
-    return "operators.str('{}','{}')".format(left, right)
+    return fnmatch(left, right)
+
+
+
+class LogicalOperator(object):
+    AND = "and"
+    OR  = "or"
+    IS  = "is"
+    NOT = "not"
+
+
 
 
 # @selectors.add("$eq")
