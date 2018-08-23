@@ -8,7 +8,7 @@ class QuerySelector(dict):
 
     def add(self, operator):
         def add_wrapper(operator_function):
-            self[operator] = operator_function()
+            self[operator] = operator_function
         return add_wrapper
 
     def get(self, operator):
@@ -21,34 +21,36 @@ class QuerySelector(dict):
 operators = QuerySelector()
 
 @operators.add("$eq")
-def eq():
-    return "=="
+def eq(left, right):
+    return "{} == {}".format(left, right)
 
 @operators.add("$gt")
-def gt():
-    return ">"
+def gt(left, right):
+    return "{} > {}".format(left, right)
     
 @operators.add("$lt")
-def lt():
-    return "<"
+def lt(left, right):
+    return "{} < {}".format(left, right)
 
 @operators.add("$gte")
-def gte():
-    return ">="
+def gte(left, right):
+    return "{} >= {}".format(left, right)
 
 @operators.add("$lte")
-def lte():
-    return "<="
+def lte(left, right):
+    return "{} <= {}".format(left, right)
 
 @operators.add("$in")
-def in_():
-    return "in"
+def in_(left, right):
+    if isinstance(left, str):
+        left = "'{}'".format(left)
+        
+    return "{} in {}".format(left, str(right))
 
 @operators.add("$str")
-def str_():
-    def str_func(field, value):
-        return "operators.str('{}','{}')".format(field, value) 
-    return str_func
+def str_(left, right):
+    return "operators.str('{}','{}')".format(left, right)
+
 
 # @selectors.add("$eq")
 # def eq(actual, excpected):

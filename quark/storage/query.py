@@ -46,8 +46,9 @@ class ConditionExpression(object):
         if self.field:
             field_value = data[self.field]
 
-        return "{}{}{}".format(
-            field_value, self.operator, self.value)
+        exp = self.operator(field_value, self.value)
+
+        return exp
 
 
 class FilterExpression(object):
