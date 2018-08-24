@@ -1,6 +1,7 @@
+from copy import deepcopy
 from attrdict import AttrDict
 from quark.storage import CollectionObject, ComplexObject, KeyValueObject
-
+from quark.common import EventHandler
 
 class StorageObjectFactory(object):
     def __init__(self, object_types=None):
@@ -28,14 +29,28 @@ class StorageObjectFactory(object):
 
 
 class Storage(object):
-    def __init__(self, data, object_factory):
-        self.data = AttrDict(data)
-        self._object_factory = object_factory
-        self.create(self.data)
+    def __init__(self, data, object_factory=None):
+        self._data = data
+        self.on_change = EventHandler()
 
-    def create(self, data):
+        if object_factory is None:
+            self._object_factory = StorageObjectFactory()
+        else:
+            self._object_factory = object_factory
+        
+        self._create(self._data)
+
+    def _create(self, data):
         for object_name in data:
-            storage_object = \
-                self._object_factory.create(object_name, data)
+            storage_object = self._object_factory.create(object_name, data)
+            storage_object.on_change += self._on_change
             setattr(self, object_name, storage_object)
 
+    @property
+    def data(self):
+        return deepcopy(self._data)
+
+    def _on_change(self, sender, action=None):
+        self.on_change(self)
+
+    

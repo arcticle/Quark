@@ -3,7 +3,7 @@ from app_settings import Config
 from future.utils import viewitems
 from future.builtins import super
 from quark.repository import RepositoryFactory
-from quark.context.storage import Storage, RepositoryCollection
+from quark.storage import Storage
 
 
 class Persistence(object):
@@ -21,7 +21,7 @@ class Persistence(object):
         including the file name
 
     `initializer` : dict
-        A dict like object to including initial 
+        A dict like object including initial 
         configuration values
 
     `default_type` : callable
@@ -37,31 +37,30 @@ class Persistence(object):
                  default_type=None, 
                  auto_create=None):
 
-        self._storages = {}
+        self._stores = {}
 
-        self._config = Config(path, 
-                              default=default_type, 
-                              auto_create=auto_create)
+        self._filestore = Config(path, 
+                                 default=default_type, 
+                                 auto_create=auto_create)
 
         if initializer:
             self._initialize(initializer)
 
-        for file in self._config.files:
-            storage = self._create_storage(file)
-            storage.storage_changed += self._on_storage_update
-            self._storages[file] = storage
+        for f in self._filestore.files:
+            storage = Storage(self._filestore[f])
+            storage.on_change += self._on_storage_change
+            self._stores[storage] = f
+            setattr(self, f, storage)
+
 
     def _initialize(self, initializer):
-        for section, items in viewitems(initializer):
-            for section_item, initial_value in viewitems(items):
-                if not section_item in self._config[section]:
-                    self._config[section][section_item] = initial_value
+        for store, data in viewitems(initializer):
+            for object_data, initial_value in viewitems(data):
+                if not object_data in self._filestore[store]:
+                    self._filestore[store][object_data] = initial_value
 
-    def _create_storage(self, config_section):
-        return Storage(config_section, self._config[config_section])
-
-    def _on_storage_update(self, sender):
-        self._config.save(sender.name)
+    def _on_storage_change(self, sender):
+        self._filestore.save(self._stores[sender])
 
 
 class QuarkConfiguration(object):
@@ -107,18 +106,3 @@ class QuarkConfiguration(object):
 
     def get(self, obj):
         return self._storage.get(obj)
-
-configuration_file_path = os.path.expanduser("~/.quarkconfig")
-c = QuarkConfiguration(configuration_file_path, "json")
-
-class aa(object):
-    def __init__(self):
-        self.name = "deneme4"
-        self.dir = "aşsldjaşlsdjalsd"
-        self.id = "a0ea06459d3648cea05ca158d725416d"
-    
-    @property
-    def resource_uri(self):
-        return "repositories"
-
-print(c.get(aa()))

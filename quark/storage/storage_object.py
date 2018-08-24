@@ -2,7 +2,7 @@ import six, abc
 from future.utils import viewitems
 from future.builtins import super
 from quark.storage.query import QueryCommand
-
+from quark.common import EventHandler
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -10,6 +10,7 @@ class StorageObject(object):
     def __init__(self, id, storage):
         self.__id__ = id
         self.__storage__ = storage
+        self.on_change = EventHandler()
 
     @property
     def data(self):
@@ -43,13 +44,18 @@ class CollectionObject(StorageObject):
                     self._update_dict(item, modifications)
                 else:
                     self.data[index] = modifications
+                self.on_change(self, action="update")
 
     def create(self, obj):
         self.data.append(obj)
+        self.on_change(self, action="create")
+
 
     def delete(self, obj):
         item = self.find(obj)
         self.data.remove(item)
+        self.on_change(self, action="delete")
+
 
     def _find(self, query):
         items, mask = [], []
@@ -78,6 +84,8 @@ class KeyValueObject(StorageObject):
     def __setattr__(self, name, value):
         if name == "value":
             self.data = value
+            self.on_change(self, action="update")
+
         super().__setattr__(name, value)
 
 
@@ -95,3 +103,4 @@ class ComplexObject(StorageObject):
     def set(self, attr, value):
         self.data[attr] = value
         setattr(self, attr, value)
+        self.on_change(self, action="update")
