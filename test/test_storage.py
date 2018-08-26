@@ -1,6 +1,7 @@
 import pytest
 import copy
-from quark.storage import Storage, StorageObjectFactory
+import unittest
+from quark.core.data.storage import Storage, StorageObjectFactory
 
 
 data = {
@@ -31,8 +32,15 @@ storage = Storage(data, StorageObjectFactory())
 def test_keyvalueobject_get_value():
     assert storage.repo_limit.value == 10
 
+def test_keyvalueobject_get_value_using_indexer():
+    assert storage["repo_limit"].value == 10
+
 def test_keyvalueobject_set_value():
     storage.repo_limit.value = 20
+    assert storage.repo_limit.value == 20
+
+def test_keyvalueobject_set_value_using_indexer():
+    storage["repo_limit"].value = 20
     assert storage.repo_limit.value == 20
 
 def test_complexobject_get_value():
@@ -142,6 +150,7 @@ def test_collectionobject_complextype_query_case1():
     result = storage.repositories.find({"id":2})
     assert result == [{"id":2, "name":"Repo-2", "dir":"c:/repos/repo2"}]
 
+
 def test_collectionobject_complextype_query_case2():
     result = storage.repositories.find({"id":{"$eq":2}})
     assert result == [{"id":2, "name":"Repo-2", "dir":"c:/repos/repo2"}]
@@ -160,6 +169,17 @@ def test_collectionobject_complextype_query_case5():
     assert result == [{"id":1, "name":"Repo-1", "dir":"c:/repos/repo1"},
                     {"id":2, "name":"Repo-2", "dir":"c:/repos/repo2"}, 
                     {"id":3, "name":"Repo-3", "dir":"c:/repos/repo3"}]
+
+def test_collectionobject_complextype_query_case6():
+    result = storage.repositories.find({"id":2, "name":"Repo-2"})
+    assert result == [{"id":2, "name":"Repo-2", "dir":"c:/repos/repo2"}]
+
+def test_collectionobject_complextype_query_case7():
+    result = storage.repositories.find({"$or": {"id":2, "name":"Repo-3"}})
+    expected = [{"id":2, "name":"Repo-2", "dir":"c:/repos/repo2"},
+                {"id":3, "name":"Repo-3", "dir":"c:/repos/repo3"}]
+    assert all([True for o in result if o in expected])
+
 
 def test_collectionobject_simpletype_update_case1():
     storage = Storage(copy.deepcopy(data), StorageObjectFactory())
@@ -189,17 +209,17 @@ def test_collectionobject_complextype_update_case2():
     assert storage.data["repositories"][1]["dir"] == "Updated"
     assert storage.data["repositories"][2]["dir"] == "Updated"
 
-def test_collectionobject_complextype_create_case1():
+def test_collectionobject_complextype_insert_case1():
     storage = Storage(copy.deepcopy(data), StorageObjectFactory())
-    storage.repositories.create({"id":4, "name":"Repo-4", "dir":"c:/repos/repo4"})
+    storage.repositories.insert({"id":4, "name":"Repo-4", "dir":"c:/repos/repo4"})
     assert storage.data["repositories"][3] == {"id":4, "name":"Repo-4", "dir":"c:/repos/repo4"}
 
-def test_collectionobject_simpletype_create_case1():
+def test_collectionobject_simpletype_insert_case1():
     storage = Storage(copy.deepcopy(data), StorageObjectFactory())
-    storage.tags.create("New Tag")
+    storage.tags.insert("New Tag")
     assert storage.data["tags"] == ["Data Analytics 101","Artificial Intelligence","Arcticle","Quark", "New Tag"]
 
 def test_collectionobject_complextype_invalid_query():
-    from quark.exceptions.storage_exceptions import InvalidExpressionException
-    with pytest.raises(InvalidExpressionException):
+    from quark.exceptions.storage_exceptions import StorageObjectException
+    with pytest.raises(StorageObjectException):
         result = storage.tags.find({"id":{"$gt":2}})

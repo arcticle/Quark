@@ -2,9 +2,12 @@ import os, six, abc
 from app_settings import Config
 from future.utils import viewitems
 from future.builtins import super
-from quark.repository import RepositoryFactory
-from quark.storage import Storage
+from quark.core.data.storage import Storage
 
+
+class PersistenceType(object):
+    JSON = "json"
+    YAML = "yaml"
 
 class Persistence(object):
     """ `Internal use only`
@@ -37,10 +40,12 @@ class Persistence(object):
                  default_type=None, 
                  auto_create=None):
 
+        default = lambda t: default_type
+
         self._stores = {}
 
-        self._filestore = Config(path, 
-                                 default=default_type, 
+        self._filestore = Config(path,
+                                 default=default, 
                                  auto_create=auto_create)
 
         if initializer:
@@ -52,6 +57,10 @@ class Persistence(object):
             self._stores[storage] = f
             setattr(self, f, storage)
 
+    def get_object_store(self, object_name):
+        for name, store in viewitems(self._stores):
+            if object_name in store.objects:
+                return name
 
     def _initialize(self, initializer):
         for store, data in viewitems(initializer):
@@ -61,48 +70,3 @@ class Persistence(object):
 
     def _on_storage_change(self, sender):
         self._filestore.save(self._stores[sender])
-
-
-class QuarkConfiguration(object):
-    """ An high level configuration object containing
-    and exposing application specific data.
-
-    Parameters
-    ----------
-    `path` : str
-        Full path to the configuration file 
-        including the file name
-
-    `file_type` : str
-        Type of underlying configuration file.
-        
-    `json` and `yaml` files supported currently
-
-    Attributes
-    ----------
-    `repositories` : RepositoryCollection
-        Collection of repositories initialized
-    """
-    storage_initializer = dict(_quarkconfig=dict(repositories=[]))
-    
-    def __init__(self, path, file_type):
-        self._persistence = \
-            Persistence(path,
-                        initializer=self.storage_initializer,
-                        default_type=self._file_type_handler(file_type),
-                        auto_create=True)
-
-        self._storage = self._persistence._storages["_quarkconfig"]
-        self._storage.create_collection("repositories", RepositoryCollection)
-
-    @property
-    def repositories(self):
-        return self._storage.repositories
-
-    def _file_type_handler(self, file_type):
-        def handler(filename):
-            return file_type
-        return handler
-
-    def get(self, obj):
-        return self._storage.get(obj)

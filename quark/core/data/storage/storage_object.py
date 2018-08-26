@@ -1,8 +1,9 @@
 import six, abc
 from future.utils import viewitems
 from future.builtins import super
-from quark.storage.query import QueryCommand
+from quark.core.data.storage import QueryCommand
 from quark.common import EventHandler
+from quark.exceptions.storage_exceptions import *
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -26,35 +27,55 @@ class CollectionObject(StorageObject):
         super().__init__(id, storage)
 
     def find(self, query):
-        items, _ = self._find(query)
-        return items
+        try:
+            items, _ = self._find(query)
+            return items
+        except Exception as e:
+            raise StorageObjectException(
+                self.__id__, "find", e)
 
     def find_one(self, query):
-        cmd = QueryCommand(query)
-        for item in self.data:
-            if cmd.execute(item):
-                return item
+        try:
+            cmd = QueryCommand(query)
+            for item in self.data:
+                if cmd.execute(item):
+                    return item
+        except Exception as e:
+            raise StorageObjectException(
+                self.__id__, "find_one", e)
 
     def update(self, query, modifications):
-        _, mask = self._find(query)
-        for index, unmasked in enumerate(mask):
-            if unmasked:
-                item = self.data[index]
-                if isinstance(item, dict):
-                    self._update_dict(item, modifications)
-                else:
-                    self.data[index] = modifications
-                self.on_change(self, action="update")
+        try:
+            _, mask = self._find(query)
+            for index, unmasked in enumerate(mask):
+                if unmasked:
+                    item = self.data[index]
+                    if isinstance(item, dict):
+                        self._update_dict(item, modifications)
+                    else:
+                        self.data[index] = modifications
+                    self.on_change(self, action="update")
+        except Exception as e:
+            raise StorageObjectException(
+                self.__id__, "update", e)
 
-    def create(self, obj):
-        self.data.append(obj)
-        self.on_change(self, action="create")
+    def insert(self, obj):
+        try:
+            self.data.append(obj)
+            self.on_change(self, action="insert")
+        except Exception as e:
+            raise StorageObjectException(
+                self.__id__, "insert", e)
 
 
     def delete(self, obj):
-        item = self.find(obj)
-        self.data.remove(item)
-        self.on_change(self, action="delete")
+        try:
+            item = self.find(obj)
+            self.data.remove(item)
+            self.on_change(self, action="delete")
+        except Exception as e:
+            raise StorageObjectException(
+                self.__id__, "delete", e)
 
 
     def _find(self, query):
