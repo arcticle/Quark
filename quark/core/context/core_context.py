@@ -8,16 +8,16 @@ from quark.core.context.initializers import QUARKCONFIG, REPOSITORY
 @six.add_metaclass(abc.ABCMeta)
 class CoreContext(object):
     def __init__(self, 
-                 persistence_type, 
+                 default_type, 
                  initializer=None):
         
-        self._type = persistence_type
+        self._default_type = default_type
         self._initializer = initializer
 
     def open(self, path):
         self.persistence = Persistence(path,
                                        initializer=self._initializer,
-                                       default_type=self._type,
+                                       default_type=self._default_type,
                                        auto_create=True)
 
     def create_object(self, object_type):
