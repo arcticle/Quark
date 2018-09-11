@@ -2,7 +2,7 @@ import os, six, abc
 from app_settings import Config
 from future.utils import viewitems
 from future.builtins import super
-from quark.core.data.storage import Storage
+from quark.core.data.storage import Storage, FileStorage
 
 
 class PersistenceType(object):
@@ -40,27 +40,52 @@ class Persistence(object):
                  default_type=None, 
                  auto_create=None):
 
-        default = lambda t: default_type
+        self._default = lambda t: default_type
+        self._auto_create = auto_create
 
         self._stores = {}
 
-        self._filestore = Config(path,
-                                 default=default, 
-                                 auto_create=auto_create)
+        # self._filestore = Config(path,
+        #                          default=self._default, 
+        #                          auto_create=auto_create)
 
-        if initializer:
-            self._initialize(initializer)
+        # if initializer:
+        #     self._initialize(initializer)
 
-        for f in self._filestore.files:
-            storage = Storage(self._filestore[f])
-            storage.on_change += self._on_storage_change
-            self._stores[storage] = f
-            setattr(self, f, storage)
+        # for f in self._filestore.files:
+        #     storage = Storage(self._filestore[f])
+        #     storage.on_change += self._on_storage_change
+        #     self._stores[storage] = f
+        #     setattr(self, f, storage)
+
+        storage = FileStorage(path, default_type=self._default, initializer=initializer)
+        setattr(self, storage.name, storage)
+        
+
+    def create_storage(self, path=None, directory=None, initializer=None):
+        if path:
+            self._create_file_storage(path, initializer)
+        # elif directory:
+        #     self._create_dir_storage(path, initializer)
 
     def get_object_store(self, object_name):
         for name, store in viewitems(self._stores):
             if object_name in store.objects:
                 return name
+
+    def _create_file_storage(self, path, initializer=None):
+        if os.path.isfile(path):
+            filestore = Config(files=path, default=self._default)
+        else:
+            filestore = Config(files=path, default=self._default, auto_create=self._auto_create)
+            if initializer:
+                self._initialize(initializer)
+
+        for f in filestore.files:
+            storage = Storage(filestore[f])
+            storage.on_change += self._on_storage_change
+            self._stores[storage] = f
+            setattr(self, f, storage)
 
     def _initialize(self, initializer):
         for store, data in viewitems(initializer):

@@ -1,5 +1,7 @@
+import os
 from copy import deepcopy
-from attrdict import AttrDict
+from future.utils import viewitems
+from app_settings import Config
 from quark.core.data.storage import CollectionObject, ComplexObject, KeyValueObject
 from quark.common import EventHandler
 
@@ -61,5 +63,53 @@ class Storage(object):
 
     def _on_change(self, sender, action=None):
         self.on_change(self)
+
+
+class FileStorage(object):
+    def __init__(self, path, default_type=None, initializer=None):
+        
+        self._path = path
+
+        file_exists = os.path.isfile(path)
+        
+        self._filestore = Config(path, default=default_type, auto_create=True)
+        
+        if not file_exists and initializer:
+            self._initialize(initializer)
+            self._filestore.save_all()
+
+        self.name = self._filestore.files[0]
+
+        self._objects = []
+        self._object_factory = StorageObjectFactory()
+        self._create(self._filestore[self.name])
+
+    def _create(self, data):
+        for object_name in data:
+            storage_object = self._object_factory.create(object_name, data)
+            storage_object.on_change += self._on_change
+            self._objects.append(object_name)
+            setattr(self, object_name, storage_object)
+
+    @property
+    def data(self):
+        return deepcopy(self._filestore[self.name])
+
+    @property
+    def objects(self):
+        return self._objects
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def _on_change(self, sender, action=None):
+        self._filestore.save_all()
+
+    def _initialize(self, initializer):
+        for store, data in viewitems(initializer):
+            for object_data, initial_value in viewitems(data):
+                if not object_data in self._filestore[store]:
+                    self._filestore[store][object_data] = initial_value
+
 
     

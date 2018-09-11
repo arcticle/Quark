@@ -3,12 +3,13 @@
 
 QUARKCONFIG = {
     "quarkconfig" : {
-        "repositories": [{"id":1, "name":"Repo-1", "dir":"c:/repos/repo1"},
-                         {"id":2, "name":"Repo-2", "dir":"c:/repos/repo2"},
-                         {"id":3, "name":"Repo-3", "dir":"c:/repos/repo3"}],
+
+        "workspaces": [{"id":1, "name":"WS-1", "dir":"c:/repos/repo1"},
+                       {"id":2, "name":"WS-2", "dir":"c:/repos/repo2"},
+                       {"id":3, "name":"WS-3", "dir":"c:/repos/repo3"}],
 
         "user": {
-            "name"  : "John Doe", 
+            "name"  : "John Doe",
             "email" : "john@doe.com"
         },
 

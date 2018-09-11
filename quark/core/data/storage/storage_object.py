@@ -96,6 +96,9 @@ class CollectionObject(StorageObject):
     def __iter__(self):
         return self.data.__iter__()
 
+    def __getitem__(self, index):
+        return self.data[index]
+
 
 class KeyValueObject(StorageObject):
     def __init__(self, id, storage):
