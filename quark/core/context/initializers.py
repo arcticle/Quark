@@ -2,7 +2,7 @@
 
 
 QUARKCONFIG = {
-    "quarkconfig" : {
+    "_quarkconfig" : {
 
         "workspaces": [{"id":1, "name":"WS-1", "dir":"c:/repos/repo1"},
                        {"id":2, "name":"WS-2", "dir":"c:/repos/repo2"},
@@ -25,5 +25,3 @@ QUARKCONFIG = {
         "scores" : [100, 200, 300, 400]
     }
 }
-
-REPOSITORY = {}

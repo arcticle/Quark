@@ -34,64 +34,32 @@ class Persistence(object):
         Specifies whether the configuration file 
         to be created if not exist
     """
-    def __init__(self, 
-                 path, 
-                 initializer=None, 
-                 default_type=None, 
-                 auto_create=None):
+    def __init__(self):
 
-        self._default = lambda t: default_type
-        self._auto_create = auto_create
+        self._stores = {}      
 
-        self._stores = {}
+    def create_storage(self, filename, initializer=None, default_type=None):
+        _file_type = "json" if not default_type else default_type 
+        _type_handler = lambda t : _file_type
 
-        # self._filestore = Config(path,
-        #                          default=self._default, 
-        #                          auto_create=auto_create)
-
-        # if initializer:
-        #     self._initialize(initializer)
-
-        # for f in self._filestore.files:
-        #     storage = Storage(self._filestore[f])
-        #     storage.on_change += self._on_storage_change
-        #     self._stores[storage] = f
-        #     setattr(self, f, storage)
-
-        storage = FileStorage(path, default_type=self._default, initializer=initializer)
-        setattr(self, storage.name, storage)
-        
-
-    def create_storage(self, path=None, directory=None, initializer=None):
-        if path:
-            self._create_file_storage(path, initializer)
-        # elif directory:
-        #     self._create_dir_storage(path, initializer)
+        return self._create_file_storage(filename, _type_handler, initializer)
 
     def get_object_store(self, object_name):
         for name, store in viewitems(self._stores):
             if object_name in store.objects:
                 return name
 
-    def _create_file_storage(self, path, initializer=None):
-        if os.path.isfile(path):
-            filestore = Config(files=path, default=self._default)
-        else:
-            filestore = Config(files=path, default=self._default, auto_create=self._auto_create)
-            if initializer:
-                self._initialize(initializer)
+    @property
+    def stores(self):
+        return self._stores
 
-        for f in filestore.files:
-            storage = Storage(filestore[f])
-            storage.on_change += self._on_storage_change
-            self._stores[storage] = f
-            setattr(self, f, storage)
+    def _create_file_storage(self, path, type_handler, initializer=None):
+        storage = FileStorage(path, 
+                              default_type=type_handler,
+                              initializer=initializer,
+                              auto_create=True)
 
-    def _initialize(self, initializer):
-        for store, data in viewitems(initializer):
-            for object_data, initial_value in viewitems(data):
-                if not object_data in self._filestore[store]:
-                    self._filestore[store][object_data] = initial_value
+        self._stores[storage.name] = storage
+        setattr(self, storage.name, storage)
+        return storage
 
-    def _on_storage_change(self, sender):
-        self._filestore.save(self._stores[sender])

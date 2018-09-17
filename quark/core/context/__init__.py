@@ -1,1 +1,1 @@
-from .core_context import CoreContext, ApplicationContext
+from .core_context import ApplicationContext, WorkspaceContext

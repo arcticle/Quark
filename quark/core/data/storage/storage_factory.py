@@ -66,13 +66,19 @@ class Storage(object):
 
 
 class FileStorage(object):
-    def __init__(self, path, default_type=None, initializer=None):
+    def __init__(self,
+                 path, 
+                 default_type=None, 
+                 initializer=None, 
+                 auto_create=False):
         
         self._path = path
 
         file_exists = os.path.isfile(path)
         
-        self._filestore = Config(path, default=default_type, auto_create=True)
+        self._filestore = Config(path, 
+                                 default=default_type, 
+                                 auto_create=auto_create)
         
         if not file_exists and initializer:
             self._initialize(initializer)

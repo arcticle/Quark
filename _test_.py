@@ -35,6 +35,7 @@ import copy
 
 
 from quark.core.data.persistence import Persistence
+from quark.core.context import ApplicationContext, WorkspaceContext
 import json
 
 data = {
@@ -61,19 +62,35 @@ data = {
 }
 
 import os
-path = os.path.expanduser(r"~\.quarkconfig")
+# path = os.path.expanduser(r"~\.quarkconfig")
 
-p = Persistence(path, default_type="json", auto_create=True, initializer=data)
-for i in p._quarkconfig.repositories:
-    print(i)
+# p = Persistence()
+# p.create_storage(filename=path, default_type="json", initializer=data)
 
-print(p._quarkconfig.user.name)
-print(p._quarkconfig.user.email)
+# for i in p._quarkconfig.repositories:
+#     print(i)
 
-print(p._quarkconfig.tags[1])
-for s in p._quarkconfig.scores:
-    print(s)
+# print(p._quarkconfig.user.name)
+# print(p._quarkconfig.user.email)
+
+# print(p._quarkconfig.tags[1])
+# for s in p._quarkconfig.scores:
+#     print(s)
 
 
+# c = ApplicationContext()
 
 
+# # print(c.repositories.find_one({"id":4}))
+# # c.repositories.insert({"id":4, "name":"asfafasdf", "dir":"c\\asdadsasd"})
+# # print(c.repositories.find_one({"id":4}))
+
+# print(c.workspaces)
+
+# print(c.create_workspace(5, "5", "c:/4"))
+# print(c.create_workspace(5, "5", "c:/4"))
+
+# print(c.workspaces)
+
+ws = WorkspaceContext("HomeCredit", "D:\\quark")
+ws.create_script("data_loader", "gsfdghdfgdfg")
