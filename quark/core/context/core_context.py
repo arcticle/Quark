@@ -87,11 +87,25 @@ class WorkspaceContext(object):
         self.name = name
         self.directory = directory
         self._core_context = CoreContext(directory)
-        self._ws = self._core_context.create_storage("{}.quark".format(name))
+        self._initialize_storage()
 
+
+    @property
+    def scripts(self):
+        return list(self._storage.scripts)
 
     def create_script(self, script_name, content):
+        if script_name in self._storage.scripts:
+            raise ValueError("A script with the same name already exists.")
+            
         self._core_context.create_file("scripts\\{}.py".format(script_name), content)
+        self._storage.scripts.insert(script_name)
+
+    def _initialize_storage(self):
+        self._storage = self._core_context.create_storage("{}.quark".format(self.name))
+        
+        if "scripts" not in self._storage.objects:
+            self._storage.add({"scripts":[]})
 
 
 

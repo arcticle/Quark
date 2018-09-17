@@ -93,4 +93,6 @@ import os
 # print(c.workspaces)
 
 ws = WorkspaceContext("HomeCredit", "D:\\quark")
-ws.create_script("data_loader", "gsfdghdfgdfg")
+ws.create_script("data_loader2", "gsfdghdfgdfg")
+
+print(ws.scripts)

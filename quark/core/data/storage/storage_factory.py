@@ -90,13 +90,6 @@ class FileStorage(object):
         self._object_factory = StorageObjectFactory()
         self._create(self._filestore[self.name])
 
-    def _create(self, data):
-        for object_name in data:
-            storage_object = self._object_factory.create(object_name, data)
-            storage_object.on_change += self._on_change
-            self._objects.append(object_name)
-            setattr(self, object_name, storage_object)
-
     @property
     def data(self):
         return deepcopy(self._filestore[self.name])
@@ -105,8 +98,23 @@ class FileStorage(object):
     def objects(self):
         return self._objects
 
+    def add(self, data):
+        for object_name, value in viewitems(data):
+            if object_name in self._filestore[self.name]:
+                raise ValueError("Invalid data provided. KEy already exists.")
+            self._filestore[self.name][object_name] = value
+        self._create(data)
+
+
     def __getitem__(self, key):
         return getattr(self, key)
+
+    def _create(self, data):
+        for object_name in data:
+            storage_object = self._object_factory.create(object_name, data)
+            storage_object.on_change += self._on_change
+            self._objects.append(object_name)
+            setattr(self, object_name, storage_object)
 
     def _on_change(self, sender, action=None):
         self._filestore.save_all()
