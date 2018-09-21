@@ -2,15 +2,17 @@ import six, abc
 from future.utils import viewitems
 from future.builtins import super
 from quark.core.data.storage import QueryCommand
+from quark.core.data.storage.validation import ValidationResult
 from quark.common import EventHandler
 from quark.exceptions.storage_exceptions import *
 
 
 @six.add_metaclass(abc.ABCMeta)
 class StorageObject(object):
-    def __init__(self, id, storage):
+    def __init__(self, id, storage, validator):
         self.__id__ = id
         self.__storage__ = storage
+        self.__validator__ = validator
         self.on_change = EventHandler()
 
     @property
@@ -19,12 +21,18 @@ class StorageObject(object):
 
     @data.setter
     def data(self, value):
-        self.__storage__[self.__id__] = value 
+        self.__storage__[self.__id__] = value
+
+    def _validate(self, data):
+        if not self.__validator__:
+            return ValidationResult()
+            
+        return self.__validator__.validate(data, self)
 
 
 class CollectionObject(StorageObject):
-    def __init__(self, id, storage):
-        super().__init__(id, storage)
+    def __init__(self, id, storage, validator):
+        super().__init__(id, storage, validator)
 
     def find(self, query):
         try:
@@ -38,7 +46,8 @@ class CollectionObject(StorageObject):
         try:
             cmd = QueryCommand(query)
             for item in self.data:
-                if cmd.execute(item):
+                result = cmd.execute(item)
+                if result == True:
                     return item
         except Exception as e:
             raise StorageObjectException(
@@ -61,6 +70,11 @@ class CollectionObject(StorageObject):
 
     def insert(self, obj):
         try:
+            validation = self._validate(obj)
+
+            if validation.has_error:
+                raise Exception(validation.errors)
+
             self.data.append(obj)
             self.on_change(self, action="insert")
         except Exception as e:
@@ -101,8 +115,8 @@ class CollectionObject(StorageObject):
 
 
 class KeyValueObject(StorageObject):
-    def __init__(self, id, storage):
-        super().__init__(id, storage)
+    def __init__(self, id, storage, validator):
+        super().__init__(id, storage, validator)
         setattr(self, "value", self.data)
 
     def __setattr__(self, name, value):
@@ -115,8 +129,8 @@ class KeyValueObject(StorageObject):
 
 
 class ComplexObject(StorageObject):
-    def __init__(self, id, storage):
-        super().__init__(id, storage)
+    def __init__(self, id, storage, validator):
+        super().__init__(id, storage, validator)
 
         for attr, value in viewitems(self.data):
             setattr(self, attr, value)
@@ -128,3 +142,9 @@ class ComplexObject(StorageObject):
         self.data[attr] = value
         setattr(self, attr, value)
         self.on_change(self, action="update")
+
+    def to_dict(self):
+        return dict(self.data)
+
+    def __iter__(self):
+        return self.data.__iter__()

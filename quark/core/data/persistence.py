@@ -2,7 +2,7 @@ import os, six, abc
 from app_settings import Config
 from future.utils import viewitems
 from future.builtins import super
-from quark.core.data.storage import Storage, FileStorage
+from quark.core.data.storage import FileStorage
 
 
 class PersistenceType(object):
@@ -36,13 +36,13 @@ class Persistence(object):
     """
     def __init__(self):
 
-        self._stores = {}      
+        self._stores = {}
 
-    def create_storage(self, filename, initializer=None, default_type=None):
+    def create_storage(self, filename, initializer=None, schema=None, default_type=None):
         _file_type = "json" if not default_type else default_type 
         _type_handler = lambda t : _file_type
 
-        return self._create_file_storage(filename, _type_handler, initializer)
+        return self._create_file_storage(filename, _type_handler, initializer, schema)
 
     def get_object_store(self, object_name):
         for name, store in viewitems(self._stores):
@@ -53,10 +53,11 @@ class Persistence(object):
     def stores(self):
         return self._stores
 
-    def _create_file_storage(self, path, type_handler, initializer=None):
+    def _create_file_storage(self, path, type_handler, initializer=None, schema=None):
         storage = FileStorage(path, 
                               default_type=type_handler,
                               initializer=initializer,
+                              schema=schema,
                               auto_create=True)
 
         self._stores[storage.name] = storage

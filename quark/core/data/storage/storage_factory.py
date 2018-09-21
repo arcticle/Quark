@@ -1,8 +1,10 @@
-import os
+import os, six, abc
 from copy import deepcopy
 from future.utils import viewitems
+from future.builtins import super
 from app_settings import Config
 from quark.core.data.storage import CollectionObject, ComplexObject, KeyValueObject
+from quark.core.data.storage.validation import Validator
 from quark.common import EventHandler
 
 class StorageObjectFactory(object):
@@ -12,10 +14,10 @@ class StorageObjectFactory(object):
             object_types = self._get_default_object_types()
         self._create_object_type_map(object_types)            
     
-    def create(self, id, data):
+    def create(self, id, data, validator):
         value_type = type(data[id])
         storage_object = self._object_type_map[value_type]
-        return storage_object(id, data)
+        return storage_object(id, data, validator)
 
     def _create_object_type_map(self, object_types):
         for value_type, object_type in object_types:
@@ -29,47 +31,67 @@ class StorageObjectFactory(object):
         yield (float, KeyValueObject)
         yield (bool, KeyValueObject)
 
+@six.add_metaclass(abc.ABCMeta)
+class StorageBase(object):
+    def __init__(self, data, schema=None):
+        self.__data__ = data
+        self.__schema__ = schema
+        self.__objects__ = []
+        self._object_factory = StorageObjectFactory()
 
-class Storage(object):
-    def __init__(self, data, object_factory=None):
-        self._data = data
-        self._objects = []
-        self.on_change = EventHandler()
+        self.object_changed = EventHandler()
 
-        if object_factory is None:
-            self._object_factory = StorageObjectFactory()
-        else:
-            self._object_factory = object_factory
-        
-        self._create(self._data)
+        self._create_objects(data, schema)
 
-    def _create(self, data):
-        for object_name in data:
-            storage_object = self._object_factory.create(object_name, data)
-            storage_object.on_change += self._on_change
-            self._objects.append(object_name)
-            setattr(self, object_name, storage_object)
 
     @property
     def data(self):
-        return deepcopy(self._data)
+        return deepcopy(self.__data__)
 
     @property
-    def objects(self):
-        return self._objects
+    def schema(self):
+        return deepcopy(self.__schema__)
+
+    @property
+    def entries(self):
+        return deepcopy(self.__objects__)
+
+    def create_entry(self, data, schema=None):
+        for object_name, value in viewitems(data):
+            if object_name in self.__data__:
+                raise ValueError("Invalid data provided. Key already exists.")
+            self.__data__[object_name] = value
+        self._create_objects(data, schema)
+
+    def _create_objects(self, data, schema):
+        for object_name in data:
+            if schema and object_name in schema:
+                validator = Validator(schema[object_name])
+            else:
+                validator = None
+            storage_object = self._object_factory.create(object_name, data, validator)
+            storage_object.on_change += self._on_object_change
+            self.__objects__.append(object_name)
+            setattr(self, object_name, storage_object)
+
+    def _on_object_change(self, sender, action=None):
+        self.object_changed(self, changed_object=sender)
 
     def __getitem__(self, key):
         return getattr(self, key)
 
-    def _on_change(self, sender, action=None):
-        self.on_change(self)
+
+class InMemoryStorage(StorageBase):
+    def __init__(self, data, schema=None):
+        super().__init__(data, schema=schema)
 
 
-class FileStorage(object):
+class FileStorage(StorageBase):
     def __init__(self,
                  path, 
                  default_type=None, 
-                 initializer=None, 
+                 initializer=None,
+                 schema=None,
                  auto_create=False):
         
         self._path = path
@@ -80,50 +102,59 @@ class FileStorage(object):
                                  default=default_type, 
                                  auto_create=auto_create)
         
+        self.name = self._filestore.files[0]
+
         if not file_exists and initializer:
             self._initialize(initializer)
             self._filestore.save_all()
 
-        self.name = self._filestore.files[0]
 
-        self._objects = []
-        self._object_factory = StorageObjectFactory()
-        self._create(self._filestore[self.name])
+        # self._objects = []
+        # self._object_factory = StorageObjectFactory()
+        # self._create(self._filestore[self.name], schema)
+        super().__init__(self._filestore[self.name], schema)
 
-    @property
-    def data(self):
-        return deepcopy(self._filestore[self.name])
+    # @property
+    # def data(self):
+    #     return deepcopy(self._filestore[self.name])
 
-    @property
-    def objects(self):
-        return self._objects
+    # @property
+    # def entries(self):
+    #     return self._objects
 
-    def add(self, data):
-        for object_name, value in viewitems(data):
-            if object_name in self._filestore[self.name]:
-                raise ValueError("Invalid data provided. KEy already exists.")
-            self._filestore[self.name][object_name] = value
-        self._create(data)
+    # def create_entry(self, data, schema=None):
+    #     for object_name, value in viewitems(data):
+    #         if object_name in self._filestore[self.name]:
+    #             raise ValueError("Invalid data provided. Key already exists.")
+    #         self._filestore[self.name][object_name] = value
+    #     self._create_objects(data, schema)
 
 
-    def __getitem__(self, key):
-        return getattr(self, key)
+    # def __getitem__(self, key):
+    #     return getattr(self, key)
 
-    def _create(self, data):
-        for object_name in data:
-            storage_object = self._object_factory.create(object_name, data)
-            storage_object.on_change += self._on_change
-            self._objects.append(object_name)
-            setattr(self, object_name, storage_object)
+    # def _create(self, data, schema):
+    #     for object_name in data:
+    #         if schema and object_name in schema:
+    #             validator = Validator(schema[object_name])
+    #         else:
+    #             validator = None
+    #         storage_object = self._object_factory.create(object_name, data, validator)
+    #         storage_object.on_change += self._on_change
+    #         self._objects.append(object_name)
+    #         setattr(self, object_name, storage_object)
 
-    def _on_change(self, sender, action=None):
+    # def _on_change(self, sender, action=None):
+    #     self._filestore.save_all()
+
+    def _on_object_change(self, sender, action=None):
         self._filestore.save_all()
+        super()._on_object_change(sender, action=action)
 
     def _initialize(self, initializer):
-        for store, data in viewitems(initializer):
-            for object_data, initial_value in viewitems(data):
-                if not object_data in self._filestore[store]:
-                    self._filestore[store][object_data] = initial_value
+        for object_name, value in viewitems(initializer):
+            if not object_name in self._filestore[self.name]:
+                self._filestore[self.name][object_name] = value
 
 
     

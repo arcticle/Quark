@@ -1,7 +1,7 @@
 import pytest
 import copy
 import unittest
-from quark.core.data.storage import Storage, StorageObjectFactory
+from quark.core.data.storage import InMemoryStorage, StorageObjectFactory
 
 
 data = {
@@ -25,8 +25,25 @@ data = {
     "scores" : [100, 200, 300, 400]
 }
 
+schema = {
+    "repositories": {
+        "$required" : ["id", "name", "dir"],
+        "$unique"   : ["id", "name", "dir"],
+        "$fields"   : {
+            "id" : {
+                "$type" : int
+            },
+            "name" : {
+                "$type" : str
+            },
+            "dir" : {
+                "$type" : str
+            }
+        }
+    }
+}
 
-storage = Storage(data, StorageObjectFactory())
+storage = InMemoryStorage(data)
 
 
 def test_keyvalueobject_get_value():
@@ -52,7 +69,7 @@ def test_complexobject_get_value_by_attribute():
     assert storage.user.email == "john@doe.com"
 
 def test_complexobject_set_value():
-    storage = Storage(data, StorageObjectFactory())
+    storage = InMemoryStorage(data)
     storage.user.set("name","Foo Bar")
     storage.user.set("email","foo@bar.com")
     assert storage.user.name == "Foo Bar"
@@ -178,31 +195,31 @@ def test_collectionobject_complextype_query_case7():
     result = storage.repositories.find({"$or": {"id":2, "name":"Repo-3"}})
     expected = [{"id":2, "name":"Repo-2", "dir":"c:/repos/repo2"},
                 {"id":3, "name":"Repo-3", "dir":"c:/repos/repo3"}]
-    assert all([True for o in result if o in expected])
+    assert all([True if o in result else False for o in expected]) and len(result) == len(expected)
 
 
 def test_collectionobject_simpletype_update_case1():
-    storage = Storage(copy.deepcopy(data), StorageObjectFactory())
+    storage = InMemoryStorage(copy.deepcopy(data))
     storage.scores.update({"$eq":100}, 101)
     assert storage.data["scores"][0] == 101
 
 def test_collectionobject_simpletype_update_case2():
-    storage = Storage(copy.deepcopy(data), StorageObjectFactory())
+    storage = InMemoryStorage(copy.deepcopy(data))
     storage.scores.update({"$gt":100}, 1111)
     assert storage.data["scores"] == [100,1111,1111,1111]
 
 def test_collectionobject_simpletype_update_case3():
-    storage = Storage(copy.deepcopy(data), StorageObjectFactory())
+    storage = InMemoryStorage(copy.deepcopy(data))
     storage.tags.update({"$str":"*tic*"}, "Updated")
     assert storage.data["tags"] == ["Updated","Artificial Intelligence","Updated","Quark"]
 
 def test_collectionobject_complextype_update_case1():
-    storage = Storage(copy.deepcopy(data), StorageObjectFactory())
+    storage = InMemoryStorage(copy.deepcopy(data))
     storage.repositories.update({"name":{"$in":["Repo-2","Repo-5"]}}, {"dir":"Updated"})
     assert storage.data["repositories"][1]["dir"] == "Updated"
 
 def test_collectionobject_complextype_update_case2():
-    storage = Storage(copy.deepcopy(data), StorageObjectFactory())
+    storage = InMemoryStorage(copy.deepcopy(data))
     storage.repositories.update({"name":{"$in":["Repo-2","Repo-3"]}}, {"dir":"Updated", "name":"Repo-Updated"})
     assert storage.data["repositories"][1]["name"] == "Repo-Updated"
     assert storage.data["repositories"][2]["name"] == "Repo-Updated"
@@ -210,12 +227,12 @@ def test_collectionobject_complextype_update_case2():
     assert storage.data["repositories"][2]["dir"] == "Updated"
 
 def test_collectionobject_complextype_insert_case1():
-    storage = Storage(copy.deepcopy(data), StorageObjectFactory())
+    storage = InMemoryStorage(copy.deepcopy(data))
     storage.repositories.insert({"id":4, "name":"Repo-4", "dir":"c:/repos/repo4"})
     assert storage.data["repositories"][3] == {"id":4, "name":"Repo-4", "dir":"c:/repos/repo4"}
 
 def test_collectionobject_simpletype_insert_case1():
-    storage = Storage(copy.deepcopy(data), StorageObjectFactory())
+    storage = InMemoryStorage(copy.deepcopy(data))
     storage.tags.insert("New Tag")
     assert storage.data["tags"] == ["Data Analytics 101","Artificial Intelligence","Arcticle","Quark", "New Tag"]
 
@@ -223,3 +240,56 @@ def test_collectionobject_complextype_invalid_query():
     from quark.exceptions.storage_exceptions import StorageObjectException
     with pytest.raises(StorageObjectException):
         result = storage.tags.find({"id":{"$gt":2}})
+
+def test_collectionobject_complextype_insert_id_uniqueness_validation_error():
+    from quark.exceptions.storage_exceptions import StorageObjectException
+    storage = InMemoryStorage(copy.deepcopy(data), schema)
+    try:
+        storage.repositories.insert({"id":2, "name":"Repo-4", "dir":"c:/repos/repo4"})
+    except StorageObjectException as se:
+        assert "Uniqueness validation" in str(se)
+
+def test_collectionobject_complextype_insert_name_uniqueness_validation_error():
+    from quark.exceptions.storage_exceptions import StorageObjectException
+    storage = InMemoryStorage(copy.deepcopy(data), schema)
+    try:
+        storage.repositories.insert({"id":4, "name":"Repo-2", "dir":"c:/repos/repo4"})
+    except StorageObjectException as se:
+        assert "Uniqueness validation" in str(se)
+
+def test_collectionobject_complextype_insert_dir_uniqueness_validation_error():
+    from quark.exceptions.storage_exceptions import StorageObjectException
+    storage = InMemoryStorage(copy.deepcopy(data), schema)
+    try:
+        storage.repositories.insert({"id":4, "name":"Repo-4", "dir":"c:/repos/repo2"})
+    except StorageObjectException as se:
+        assert "Uniqueness validation" in str(se)
+
+def test_collectionobject_complextype_insert_uniqueness_validation_error():
+    from quark.exceptions.storage_exceptions import StorageObjectException
+    storage = InMemoryStorage(copy.deepcopy(data), schema)
+    try:
+        storage.repositories.insert({"id":2, "name":"Repo-2", "dir":"c:/repos/repo2"})
+    except StorageObjectException as se:
+        assert "Uniqueness validation" in str(se)
+
+def test_collectionobject_complextype_insert_required_validation_error():
+    from quark.exceptions.storage_exceptions import StorageObjectException
+    storage = InMemoryStorage(copy.deepcopy(data), schema)
+    try:
+        storage.repositories.insert({"id":4, "name":"Repo-2"})
+    except StorageObjectException as se:
+        assert "Required validation" in str(se)
+
+def test_collectionobject_complextype_insert_type_validation_error():
+    from quark.exceptions.storage_exceptions import StorageObjectException
+    storage = InMemoryStorage(copy.deepcopy(data), schema)
+    try:
+        storage.repositories.insert({"id":"abc", "name":"Repo-4", "dir":"c:/repos/repo4"})
+    except StorageObjectException as se:
+        assert "Type validation" in str(se)
+
+def test_collectionobject_complextype_insert_no_validation_error():
+    from quark.exceptions.storage_exceptions import StorageObjectException
+    storage = InMemoryStorage(copy.deepcopy(data), schema)
+    storage.repositories.insert({"id":4, "name":"Repo-4", "dir":"c:/repos/repo4"})

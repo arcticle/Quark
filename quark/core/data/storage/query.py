@@ -48,13 +48,14 @@ class FilterExpression(object):
     def __call__(self, data):
         def collect(expressions):
        
-            if len(expressions) == 1:
-                return expressions[0](data)
+            result = None
 
-            for index in range(1, len(expressions)):
-                left = expressions[index-1](data)
-                right = expressions[index](data)
-                result = self.filter_operator(left, right)
+            for expression in expressions:
+                if result is None:
+                    result = expression(data)
+                else:
+                    right = expression(data)
+                    result = self.filter_operator(result, right)
 
             return result
 
@@ -85,6 +86,7 @@ class Query(object):
                 self.filter = FilterExpression(QueryOperators.logical[key])
                 for field, operator, filter_value in self._parse_logical_filter(value):
                     self.filter.add_condition(field, QueryOperators.get(operator), filter_value)
+                continue
 
             if QueryOperators.has(key):
                 self.filter.add_condition(None, QueryOperators.get(key), value)
