@@ -100,6 +100,14 @@ class ApplicationContext(object):
 
         return id
 
+    def delete_workspace(self, id):
+        try:
+            self._storage.workspaces.delete({"id":id})
+        except:
+            return -1
+        return id
+
+
     def _get_workspace_by_id(self, id):
         return self._storage.workspaces.find_one({"id":id})
     
@@ -129,16 +137,30 @@ class WorkspaceContext(object):
         if script_name in self._storage.scripts:
             raise ValueError("A script with the same name already exists.")
 
-        self._core_context.create_file("scripts\\{}.py".format(script_name), content)
-        self._storage.scripts.insert(script_name)
+        try:
+            self._core_context.create_file("scripts\\{}.py".format(script_name), content)
+            self._storage.scripts.insert(script_name)
+        except:
+            return -1
+        return 1
 
     def create_experiment(self, experiment_name):
         if experiment_name in self._storage.experiments:
             raise ValueError("An experiment with the same name already exists.")
 
-        experiment = self._create_experiment_context(experiment_name)
-        self._storage.experiments.insert(experiment_name)
-        return experiment
+        try:
+            self._storage.experiments.insert(experiment_name)
+        except:
+            return -1
+
+        return 1
+
+    def delete_experiment(self, experiment_name):
+        try:
+            self._storage.experiments.delete({"name":experiment_name})
+        except:
+            return -1
+        return 1
 
     def open_experiment(self, experiment_name):
         if not experiment_name in self._storage.experiments:
@@ -176,10 +198,29 @@ class ExperimentContext(object):
     def params(self):
         return self._storage.params.to_dict()
 
+    @property
+    def pipeline(self):
+        return self._storage.pipeline
+
+    def add_script(self, script_name):
+        try:
+            self._storage.pipeline.insert(script_name)
+        except:
+            return -1
+        return 1
+
+    def add_parameter(self, name, value):
+        try:
+            self._storage.params.set(name, value)
+        except:
+            return -1
+        return 1
+
     def _initialize_storage(self):
         filename = "{}.xpr".format(self.name)
 
-        return self._core_context.create_storage(filename, initializers.EXPERIMENT)
+        return self._core_context.create_storage(filename, 
+                                                 initializer=initializers.EXPERIMENT)
         
         # if "pipeline" not in self._storage.entries:
         #     self._storage.create_entry({"pipeline":[]})

@@ -139,9 +139,13 @@ class ComplexObject(StorageObject):
         return getattr(self, attr)
 
     def set(self, attr, value):
-        self.data[attr] = value
-        setattr(self, attr, value)
-        self.on_change(self, action="update")
+        try:
+            self.data[attr] = value
+            setattr(self, attr, value)
+            self.on_change(self, action="update")
+        except:
+            return -1
+        return 1
 
     def to_dict(self):
         return dict(self.data)

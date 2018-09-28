@@ -39,75 +39,77 @@ from quark.core.context import ApplicationContext, WorkspaceContext
 from quark.core.context import Application
 import json
 
-# data = {
-#     "repositories": [
-#         {"id":1, "name":"Repo-1", "dir":"c:/repos/repo1"},
-#         {"id":2, "name":"Repo-2", "dir":"c:/repos/repo2"},
-#         {"id":3, "name":"Repo-3", "dir":"c:/repos/repo3"}
-#     ],
-
-#     "user": {"name":"John Doe", "email":"john@doe.com"},
-
-#     "repo_limit" : 10,
-
-#     "tags" : [
-#         "Data Analytics 101",
-#         "Artificial Intelligence",
-#         "Arcticle",
-#         "Quark"
-#     ],
-
-#     "scores" : [100, 200, 300, 400]
-# }
-
-# import os
-# path = os.path.expanduser(r"~\.quarkconfig2")
-
-# p = Persistence()
-# p.create_storage(filename=path, default_type="json", initializer=data)
-
-# for i in p._quarkconfig_.repositories:
-#     print(i)
-
-# print(p._quarkconfig.user.name)
-# print(p._quarkconfig.user.email)
-
-# print(p._quarkconfig.tags[1])
-# for s in p._quarkconfig.scores:
-#     print(s)
-
-
-# c = ApplicationContext()
-
-# ws = c.create_workspace(20180921162635,"HomeCredit", "D:\\quark")
-# print(ws)
-
-
 app = Application()
 
-app.create_workspace("HomeCredit", "D:\\quark")
+ws = app.create_workspace("HomeCredit", "D:\\quark")
 
-print(app.workspaces)
+xp = ws.create_experiment("LGBM")
+ws.create_script("preprocess","preprocessing script text goes here...")
 
-# print(c.workspaces)
+xp.add_script("preprocess")
+xp.add_parameter("learning_rate", 0.1)
 
-# ws.create_script("preprocess","preprocessing script text goes here...")
-# exp = ws.create_experiment("LGBM")
+# from future.utils import viewitems
+# from collections.abc import Mapping
 
-# print(ws.experiments)
+# class Pipeline(Mapping):
+#     def __init__(self, *args, **kw):
+#         self._scripts = dict()
+#         self._steps = []
 
+#         if args:
+#             for script in args:
+#                 self.__addstep__(script.name, script)
 
+#         if kw:
+#             for name, script in viewitems(kw):
+#                 self.__addstep__(name, script)
 
-# print(c.create_workspace(5, "5", "c:/4"))
-# print(c.create_workspace(5, "5", "c:/4"))
+#     @property
+#     def num_of_steps(self):
+#         return len(self._scripts)
 
-# print(c.workspaces)
+#     def add_step(self, script):
+#         self.__addstep__(script.name, script)
+        
 
-# ws = WorkspaceContext("HomeCredit", "D:\\quark")
-# # ws.create_script("data_loader2", "gsfdghdfgdfg")
+#     def __getitem__(self, key):
+#         if isinstance(key, int):
+#             if key == -1:
+#                 return self._scripts[self.num_of_steps-1]
+#             return self._scripts[key]
+#         if isinstance(key, str):
+#             index = self._steps.index(key)
+#             return self._scripts[index]
 
-# # print(ws.scripts)
+#     def __iter__(self):
+#         for step in range(self.num_of_steps):
+#             yield self._scripts[step]
+    
+#     def __len__(self):
+#         return len(self._scripts)
 
-# # exp = ws.create_experiment("lgbm")
-# exp = ws.open_experiment("lgbm")
-# print(exp.params)
+#     def __addstep__(self, name, script):
+#         key = len(self._scripts)
+#         self._scripts[key] = script
+#         self._steps.insert(key, name)
+
+# class a(object):
+#     def __init__(self, name):
+#         self._name = name
+
+#     @property
+#     def name(self):
+#         return self._name
+
+# # pp = Pipeline(z=a("z"), x=a("x"), y=a("y"))
+# pp = Pipeline(a("z"), a("x"), a("y"))
+# pp.add_step(a("j"))
+
+# print(pp._scripts)
+# print(pp[0].name)
+# print(pp["y"].name)
+# print(pp[-1].name)
+
+# for i in pp:
+#     print (i.name)

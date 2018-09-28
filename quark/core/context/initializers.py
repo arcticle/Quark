@@ -1,9 +1,9 @@
 
 
 QUARKCONFIG = {
-    "workspaces" : [{"id":1, "name":"WS-1", "dir":"d:/quark"},
-                    {"id":2, "name":"WS-2", "dir":"d:/quark"},
-                    {"id":3, "name":"WS-3", "dir":"d:/quark"}],
+    "workspaces" : [{"id":1, "name":"WS-1", "dir":"d:/quark/WS-1"},
+                    {"id":2, "name":"WS-2", "dir":"d:/quark/WS-2"},
+                    {"id":3, "name":"WS-3", "dir":"d:/quark/WS-3"}],
 
     "user": {
         "name"  : "John Doe",
