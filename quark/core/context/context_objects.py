@@ -1,14 +1,15 @@
-import os
+import os, copy
 from datetime import datetime
 from future.utils import viewitems
 from collections.abc import Mapping
 from quark.core.context import ApplicationContext, WorkspaceContext, ExperimentContext
-
+from quark.common.utils import Cache
 
 
 class Application(object):
     def __init__(self):
-        self._context = ApplicationContext()
+        app_dir = os.path.expanduser("~\\")
+        self._context = ApplicationContext(app_dir)
         self._workspaces = {}
 
         self.__initialize__()
@@ -24,7 +25,7 @@ class Application(object):
         result = self._context.create_workspace(int(ws_id), name, ws_dir)
 
         if result > 0:
-            ws = Workspace(ws_id, name, ws_dir)
+            ws = Workspace(ws_id, name, WorkspaceContext(ws_dir))
             self._workspaces[result] = ws
             return ws
 
@@ -37,20 +38,26 @@ class Application(object):
 
     def __initialize__(self):
         for ws in self._context.workspaces:
-            self._workspaces[ws["id"]] = Workspace(**ws)
+            args = (ws["id"], ws["name"], WorkspaceContext(ws["dir"]))
+            self._workspaces[ws["id"]] = Workspace(*args)
 
 
 
 class Workspace(object):
-    def __init__(self, id, name, dir):
-        
+    def __init__(self, id, name, context):
+        if not isinstance(context, WorkspaceContext):
+            raise ValueError("Invalid context type has been provided")
+
         self._id = id
         self._name = name
-        self._directory = dir
+        self._context = context
+
         self._experiments = {}
         self._scripts = {}
+
+        self._context.initialize_storage(name)
+        self.__initialize__()
         
-        self._context = WorkspaceContext(name, dir)
 
     @property
     def id(self):
@@ -62,7 +69,7 @@ class Workspace(object):
 
     @property
     def directory(self):
-        return self._directory
+        return self._context.directory
 
     @property
     def experiments(self):
@@ -74,11 +81,10 @@ class Workspace(object):
 
 
     def create_experiment(self, name):
-        xp_dir = os.path.join(self._directory, "experiments", name)
         result = self._context.create_experiment(name)
 
         if result > 0:
-            xp = Experiment(name, xp_dir, self._scripts)
+            xp = self._create_experiment_object(name)
             self._experiments[name] = xp
             return xp
 
@@ -92,19 +98,45 @@ class Workspace(object):
         result = self._context.create_script(script_name, content)
 
         if result > 0:
-            scr = Script(script_name, "")
+            scr = self._create_script_object(script_name)
             self._scripts[script_name] = scr
             return scr
 
+    def __initialize__(self):
+        for script_name in self._context.scripts:
+            self._scripts[script_name] = self._create_script_object(script_name)
+
+        for xp_name in self._context.experiments:
+            self._experiments[xp_name] = self._create_experiment_object(xp_name)
+
+    def _get_experiment_location(self, experiment_name):
+        return os.path.join(self._context.directory, "experiments", experiment_name)
+
+    def _create_script_object(self, script_name):
+        directory = os.path.join(self._context.directory, "scripts")
+        return Script(script_name, directory)
+
+    def _create_experiment_object(self, experiment_name):
+        xp_dir = self._get_experiment_location(experiment_name)
+        args = (experiment_name, self._scripts, ExperimentContext(xp_dir))
+        return Experiment(*args)
+
+
 class Experiment(object):
-    def __init__(self, name, dir, scripts):
+    def __init__(self, name, scripts, context):
+        if not isinstance(context, ExperimentContext):
+            raise ValueError("Invalid context type has been provided")
+
         self._name = name
-        self._directory = dir
         self._scripts = scripts
+        self._context = context
 
-        self._context = ExperimentContext(name, dir)
-
+        self._context.initialize_storage(name)
         self._pipeline = self._create_pipeline()
+
+    @property
+    def pipeline(self):
+        return self._pipeline
 
     def add_script(self, script):
         result = self._context.add_script(script)
@@ -118,6 +150,14 @@ class Experiment(object):
         if result > 0:
             self._pipeline.add_param(name, value)
 
+    def add_parameters(self, params):
+        if not isinstance(params, dict):
+            raise ValueError("Invalid params object has been provided. " + 
+                "Expected \"dict\" but was \"{}\".".format(type(params)))
+
+        for name, value in viewitems(params):
+            self.add_parameter(name, value)
+
     def _create_pipeline(self):
         scripts = [] 
         for script in self._context.pipeline:
@@ -129,62 +169,58 @@ class Experiment(object):
 
 
 class Script(object):
-    def __init__(self, alias, filename):
-        self._alias = alias
-        self._filename = filename
+    def __init__(self, name, directory):
+        self._name = name
+        self._filename = os.path.join(directory, "{}.py".format(name))
 
     @property
     def name(self):
-        return self._alias
+        return self._name
+
+    @property
+    def filename(self):
+        return self._filename
+
+    def run(self, context):
+        pass
 
 
-
-class Pipeline(Mapping):
+class Pipeline(object):
     def __init__(self, *args, **kw):
-        self._steps = []
-        self._scripts = {}
         self._params = {}
+        self._cache = Cache()
 
         if args:
             for script in args:
-                self.__addstep__(script.name, script)
-
+                self._cache.add(script.name, script)
         if kw:
             for name, value in viewitems(kw):
                 if name == "params":
                     self._params = value
                 else:
-                    self.__addstep__(name, value)
+                    self._cache.add(name, value)
 
     @property
-    def num_of_steps(self):
-        return len(self._scripts)
+    def params(self):
+        return copy.deepcopy(self._params)
+
+    @property
+    def steps(self):
+        return [value for key, value in self._cache]
 
     def add_step(self, script):
-        self.__addstep__(script.name, script)
+        self._cache.add(script.name, script)
 
     def add_param(self, name, value):
         self._params[name] = value
 
     def __getitem__(self, key):
-        if isinstance(key, int):
-            if key == -1:
-                return self._scripts[self.num_of_steps-1]
-            return self._scripts[key]
-        if isinstance(key, str):
-            index = self._steps.index(key)
-            return self._scripts[index]
+        return self._cache.get(key)
 
     def __iter__(self):
-        for step in range(self.num_of_steps):
-            yield self._scripts[step]
+        return self._cache.__iter__()
     
     def __len__(self):
-        return len(self._scripts)
-
-    def __addstep__(self, name, script):
-        key = len(self._scripts)
-        self._scripts[key] = script
-        self._steps.insert(key, name)
+        return len(self._cache)
 
 

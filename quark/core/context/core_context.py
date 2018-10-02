@@ -62,26 +62,27 @@ class CoreContext(object):
             return object_type(store, self)
 
     @classmethod
-    def require_open(cls, func):
+    def requires_storage(cls, func):
         def wrapper_func(self, *args, **kwargs):
-            if not self.persistence:
-                raise Exception("Context is not open.")
+            if not self.storage:
+                raise Exception("Storage hasn't been initialized.")
             return func(self, *args, **kwargs)
         return wrapper_func
 
 
-class ApplicationContext(object):
-    def __init__(self):
-        directory = os.path.expanduser("~\\")
-        self._core_context = CoreContext(directory)
-        self._storage = self._core_context.create_storage(".quarkconfig",
-                                                          schemas.QUARKCONFIG_SCHEMA,
-                                                          initializers.QUARKCONFIG)
+class ApplicationContext(CoreContext):
+    def __init__(self, directory):
+        super().__init__(directory)
+        
+        self.create_storage(".quarkconfig",
+                            schemas.QUARKCONFIG_SCHEMA,
+                            initializers.QUARKCONFIG)
 
     @property
     def workspaces(self):
-        return list(self._storage.workspaces)
+        return list(self.storage.workspaces)
 
+    @CoreContext.requires_storage
     def get_workspace(self, id=None, name=None, directory=None):
         if id:
             return self._get_workspace_by_id(id)
@@ -92,142 +93,119 @@ class ApplicationContext(object):
         if directory:
             return self._get_workspace_by_id(directory)
 
+    @CoreContext.requires_storage
     def create_workspace(self, id, name, directory):
         try:
-            self._storage.workspaces.insert({"id":id, "name":name, "dir":directory})
+            self.storage.workspaces.insert({"id":id, "name":name, "dir":directory})
         except:
             return -1
 
         return id
 
+    @CoreContext.requires_storage
     def delete_workspace(self, id):
         try:
-            self._storage.workspaces.delete({"id":id})
+            self.storage.workspaces.delete({"id":id})
         except:
             return -1
         return id
 
 
     def _get_workspace_by_id(self, id):
-        return self._storage.workspaces.find_one({"id":id})
+        return self.storage.workspaces.find_one({"id":id})
     
     def _get_workspace_by_name(self, name):
-        return self._storage.workspaces.find_one({"name":name})
+        return self.storage.workspaces.find_one({"name":name})
 
     def _get_workspace_by_directory(self, directory):
-        return self._storage.workspaces.find_one({"dir":directory})
+        return self.storage.workspaces.find_one({"dir":directory})
 
 
-class WorkspaceContext(object):
-    def __init__(self, name, directory):
-        self.name = name
-        self.directory =  directory
-        self._core_context = CoreContext(directory)
-        self._storage = self._initialize_storage()
+class WorkspaceContext(CoreContext):
+    def __init__(self, directory):
+        super().__init__(directory)
 
     @property
     def scripts(self):
-        return list(self._storage.scripts)
+        return list(self.storage.scripts)
 
     @property
     def experiments(self):
-        return list(self._storage.experiments)
+        return list(self.storage.experiments)
 
+    @CoreContext.requires_storage
     def create_script(self, script_name, content):
-        if script_name in self._storage.scripts:
+        if script_name in self.storage.scripts:
             raise ValueError("A script with the same name already exists.")
 
         try:
-            self._core_context.create_file("scripts\\{}.py".format(script_name), content)
-            self._storage.scripts.insert(script_name)
+            self.create_file("scripts\\{}.py".format(script_name), content)
+            self.storage.scripts.insert(script_name)
         except:
             return -1
         return 1
 
+    @CoreContext.requires_storage
     def create_experiment(self, experiment_name):
-        if experiment_name in self._storage.experiments:
+        if experiment_name in self.storage.experiments:
             raise ValueError("An experiment with the same name already exists.")
 
         try:
-            self._storage.experiments.insert(experiment_name)
+            self.storage.experiments.insert(experiment_name)
         except:
             return -1
 
         return 1
 
+    @CoreContext.requires_storage
     def delete_experiment(self, experiment_name):
         try:
-            self._storage.experiments.delete({"name":experiment_name})
+            self.storage.experiments.delete({"name":experiment_name})
         except:
             return -1
         return 1
 
-    def open_experiment(self, experiment_name):
-        if not experiment_name in self._storage.experiments:
-            raise ValueError("An experiment with the name \"{}\" could not be found.".format(experiment_name))
+    def initialize_storage(self, storage_name):
+        filename = "{}.quark".format(storage_name)
 
-        return self._create_experiment_context(experiment_name)
-
-    def _create_experiment_context(self, experiment_name):
-        exp_name = "{}.{}".format(self.name, experiment_name)
-        exp_dir = "{}\\experiments\\{}".format(self.directory, experiment_name)
-        experiment = ExperimentContext(exp_name, exp_dir)
-        return experiment
-
-    def _initialize_storage(self):
-        filename = "{}.quark".format(self.name)
-
-        return self._core_context.create_storage(filename, 
-                                                 initializer=initializers.WORKSPACE)
-
-        # if "scripts" not in self._storage.entries:
-        #     self._storage.create_entry({"scripts":[]})
-
-        # if "experiments" not in self._storage.entries:
-        #     self._storage.create_entry({"experiments":[]})
+        self.create_storage(filename,
+                            initializer=initializers.WORKSPACE)
 
 
-class ExperimentContext(object):
-    def __init__(self, name, directory):
-        self.name = name
-        self.directory = directory
-        self._core_context = CoreContext(directory)
-        self._storage = self._initialize_storage()
+class ExperimentContext(CoreContext):
+    def __init__(self, directory):
+        super().__init__(directory)
 
     @property
     def params(self):
-        return self._storage.params.to_dict()
+        return self.storage.params.to_dict()
 
     @property
     def pipeline(self):
-        return self._storage.pipeline
+        return self.storage.pipeline
 
+    @CoreContext.requires_storage
     def add_script(self, script_name):
         try:
-            self._storage.pipeline.insert(script_name)
+            self.storage.pipeline.insert(script_name)
         except:
             return -1
         return 1
 
+    @CoreContext.requires_storage
     def add_parameter(self, name, value):
         try:
-            self._storage.params.set(name, value)
+            self.storage.params.set(name, value)
         except:
             return -1
         return 1
 
-    def _initialize_storage(self):
-        filename = "{}.xpr".format(self.name)
+    def initialize_storage(self, storage_name):
+        filename = "{}.xpr".format(storage_name)
 
-        return self._core_context.create_storage(filename, 
-                                                 initializer=initializers.EXPERIMENT)
-        
-        # if "pipeline" not in self._storage.entries:
-        #     self._storage.create_entry({"pipeline":[]})
+        self.create_storage(filename, 
+                            initializer=initializers.EXPERIMENT)
 
-        # if "params" not in self._storage.entries:
-        #     self._storage.create_entry({"params":{}})
-        #     self._storage.params.set("learning_rate", 0.9)
 
 # class RepositoryContext(CoreContext):
 #     def __init__(self):

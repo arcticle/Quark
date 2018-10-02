@@ -34,18 +34,40 @@ import copy
 
 
 
-from quark.core.data.persistence import Persistence
-from quark.core.context import ApplicationContext, WorkspaceContext
 from quark.core.context import Application
 import json
 
 app = Application()
 
-ws = app.create_workspace("HomeCredit", "D:\\quark")
+location = "D:\\quark"
 
-xp = ws.create_experiment("LGBM")
-ws.create_script("preprocess","preprocessing script text goes here...")
+def create_ws(name, loc):
+    return app.create_workspace(name, loc)
 
-xp.add_script("preprocess")
-xp.add_parameter("learning_rate", 0.1)
 
+def create_xp(ws, name):
+    return ws.create_experiment(name)
+
+def create_script(ws, name):
+    return ws.create_script(name,"{} script text goes here...".format(name))
+
+def add_script(xp, name):
+    xp.add_script(name)
+
+def add_param(xp, name, value):
+    xp.add_parameter(name, value)
+
+
+def print_workspaces():
+    for ws in app.workspaces:
+        print(ws, app.workspaces[ws].name)
+
+
+# create_xp(app.workspaces[20181001131931], "LGBM_CV")
+# add_script(app.workspaces[20181001131931].experiments["LGBM_CV"], "preprocess")
+# add_script(app.workspaces[20181001131931].experiments["LGBM_CV"], "clean")
+
+steps = app.workspaces[20181001131931].experiments["LGBM"].pipeline.steps
+
+for s in steps:
+    print(s)
