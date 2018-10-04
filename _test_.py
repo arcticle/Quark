@@ -34,10 +34,12 @@ import copy
 
 
 
-from quark_core_api.context import Application
+# from quark_core_api.context import Application
+from quark_core_api.core import QuarkApplication
 import json
 
-app = Application()
+# app = Application()
+app = QuarkApplication()
 
 location = "D:\\quark"
 
