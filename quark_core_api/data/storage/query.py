@@ -1,6 +1,6 @@
 from future.utils import viewitems
-from quark.core.data.storage import QueryOperators, LogicalOperator
-from quark.exceptions.storage_exceptions import InvalidExpressionException
+from quark_core_api.data.storage import QueryOperators, LogicalOperator
+from quark_core_api.exceptions.storage_exceptions import InvalidExpressionException
 
 
 

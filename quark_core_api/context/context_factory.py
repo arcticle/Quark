@@ -1,4 +1,4 @@
-from quark.core.context import CoreContext
+from quark_core_api.context import CoreContext
 
 
 

@@ -1,5 +1,5 @@
 import pytest
-from quark.core.data.storage.query_operators import QueryOperators
+from quark_core_api.data.storage.query_operators import QueryOperators
 
 
 testcases_logical = [

@@ -1,5 +1,5 @@
-from quark.common.utils import Cache, ReadOnlyCache
-from quark.core.context.context_objects import Experiment
+from quark_core_api.common import Cache, ReadOnlyCache
+from quark_core_api.context import Experiment
 
 
 

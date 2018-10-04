@@ -1,8 +1,8 @@
 import os, six, abc
 from datetime import datetime
 from future.builtins import super
-from quark.core.data.persistence import Persistence, PersistenceType
-from quark.core.context import initializers, schemas
+from quark_core_api.data.persistence import Persistence, PersistenceType
+from quark_core_api.context import initializers, schemas
 
 
 @six.add_metaclass(abc.ABCMeta)

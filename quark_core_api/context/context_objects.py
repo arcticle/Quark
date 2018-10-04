@@ -2,8 +2,8 @@ import os, copy
 from datetime import datetime
 from future.utils import viewitems
 from collections.abc import Mapping
-from quark.core.context import ApplicationContext, WorkspaceContext, ExperimentContext
-from quark.common.utils import Cache
+from quark_core_api.context import ApplicationContext, WorkspaceContext, ExperimentContext
+from quark_core_api.common import Cache
 
 
 class Application(object):

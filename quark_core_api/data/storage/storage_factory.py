@@ -3,9 +3,8 @@ from copy import deepcopy
 from future.utils import viewitems
 from future.builtins import super
 from app_settings import Config
-from quark.core.data.storage import CollectionObject, ComplexObject, KeyValueObject
-from quark.core.data.storage.validation import Validator
-from quark.common import EventHandler
+from quark_core_api.data.storage import CollectionObject, ComplexObject, KeyValueObject, Validator
+from quark_core_api.common import EventHandler
 
 class StorageObjectFactory(object):
     def __init__(self, object_types=None):

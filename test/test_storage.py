@@ -1,7 +1,7 @@
 import pytest
 import copy
 import unittest
-from quark.core.data.storage import InMemoryStorage, StorageObjectFactory
+from quark_core_api.data.storage import InMemoryStorage, StorageObjectFactory
 
 
 data = {
@@ -237,12 +237,12 @@ def test_collectionobject_simpletype_insert_case1():
     assert storage.data["tags"] == ["Data Analytics 101","Artificial Intelligence","Arcticle","Quark", "New Tag"]
 
 def test_collectionobject_complextype_invalid_query():
-    from quark.exceptions.storage_exceptions import StorageObjectException
+    from quark_core_api.exceptions.storage_exceptions import StorageObjectException
     with pytest.raises(StorageObjectException):
         result = storage.tags.find({"id":{"$gt":2}})
 
 def test_collectionobject_complextype_insert_id_uniqueness_validation_error():
-    from quark.exceptions.storage_exceptions import StorageObjectException
+    from quark_core_api.exceptions.storage_exceptions import StorageObjectException
     storage = InMemoryStorage(copy.deepcopy(data), schema)
     try:
         storage.repositories.insert({"id":2, "name":"Repo-4", "dir":"c:/repos/repo4"})
@@ -250,7 +250,7 @@ def test_collectionobject_complextype_insert_id_uniqueness_validation_error():
         assert "Uniqueness validation" in str(se)
 
 def test_collectionobject_complextype_insert_name_uniqueness_validation_error():
-    from quark.exceptions.storage_exceptions import StorageObjectException
+    from quark_core_api.exceptions.storage_exceptions import StorageObjectException
     storage = InMemoryStorage(copy.deepcopy(data), schema)
     try:
         storage.repositories.insert({"id":4, "name":"Repo-2", "dir":"c:/repos/repo4"})
@@ -258,7 +258,7 @@ def test_collectionobject_complextype_insert_name_uniqueness_validation_error():
         assert "Uniqueness validation" in str(se)
 
 def test_collectionobject_complextype_insert_dir_uniqueness_validation_error():
-    from quark.exceptions.storage_exceptions import StorageObjectException
+    from quark_core_api.exceptions.storage_exceptions import StorageObjectException
     storage = InMemoryStorage(copy.deepcopy(data), schema)
     try:
         storage.repositories.insert({"id":4, "name":"Repo-4", "dir":"c:/repos/repo2"})
@@ -266,7 +266,7 @@ def test_collectionobject_complextype_insert_dir_uniqueness_validation_error():
         assert "Uniqueness validation" in str(se)
 
 def test_collectionobject_complextype_insert_uniqueness_validation_error():
-    from quark.exceptions.storage_exceptions import StorageObjectException
+    from quark_core_api.exceptions.storage_exceptions import StorageObjectException
     storage = InMemoryStorage(copy.deepcopy(data), schema)
     try:
         storage.repositories.insert({"id":2, "name":"Repo-2", "dir":"c:/repos/repo2"})
@@ -274,7 +274,7 @@ def test_collectionobject_complextype_insert_uniqueness_validation_error():
         assert "Uniqueness validation" in str(se)
 
 def test_collectionobject_complextype_insert_required_validation_error():
-    from quark.exceptions.storage_exceptions import StorageObjectException
+    from quark_core_api.exceptions.storage_exceptions import StorageObjectException
     storage = InMemoryStorage(copy.deepcopy(data), schema)
     try:
         storage.repositories.insert({"id":4, "name":"Repo-2"})
@@ -282,7 +282,7 @@ def test_collectionobject_complextype_insert_required_validation_error():
         assert "Required validation" in str(se)
 
 def test_collectionobject_complextype_insert_type_validation_error():
-    from quark.exceptions.storage_exceptions import StorageObjectException
+    from quark_core_api.exceptions.storage_exceptions import StorageObjectException
     storage = InMemoryStorage(copy.deepcopy(data), schema)
     try:
         storage.repositories.insert({"id":"abc", "name":"Repo-4", "dir":"c:/repos/repo4"})
@@ -290,6 +290,6 @@ def test_collectionobject_complextype_insert_type_validation_error():
         assert "Type validation" in str(se)
 
 def test_collectionobject_complextype_insert_no_validation_error():
-    from quark.exceptions.storage_exceptions import StorageObjectException
+    from quark_core_api.exceptions.storage_exceptions import StorageObjectException
     storage = InMemoryStorage(copy.deepcopy(data), schema)
     storage.repositories.insert({"id":4, "name":"Repo-4", "dir":"c:/repos/repo4"})

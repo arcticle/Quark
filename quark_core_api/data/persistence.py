@@ -2,7 +2,7 @@ import os, six, abc
 from app_settings import Config
 from future.utils import viewitems
 from future.builtins import super
-from quark.core.data.storage import FileStorage
+from quark_core_api.data.storage import FileStorage
 
 
 class PersistenceType(object):

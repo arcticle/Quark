@@ -34,7 +34,7 @@ import copy
 
 
 
-from quark.core.context import Application
+from quark_core_api.context import Application
 import json
 
 app = Application()
@@ -67,7 +67,7 @@ def print_workspaces():
 # add_script(app.workspaces[20181001131931].experiments["LGBM_CV"], "preprocess")
 # add_script(app.workspaces[20181001131931].experiments["LGBM_CV"], "clean")
 
-steps = app.workspaces[20181001131931].experiments["LGBM"].pipeline.steps
+steps = app.workspaces[20181001131931].experiments["LGBM_CV"].pipeline.steps
 
 for s in steps:
-    print(s)
+    print(s.name)

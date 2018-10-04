@@ -1,10 +1,9 @@
 import six, abc
 from future.utils import viewitems
 from future.builtins import super
-from quark.core.data.storage import QueryCommand
-from quark.core.data.storage.validation import ValidationResult
-from quark.common import EventHandler
-from quark.exceptions.storage_exceptions import *
+from quark_core_api.data.storage import QueryCommand, ValidationResult
+from quark_core_api.common import EventHandler
+from quark_core_api.exceptions.storage_exceptions import StorageObjectException
 
 
 @six.add_metaclass(abc.ABCMeta)
