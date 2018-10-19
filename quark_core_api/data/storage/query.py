@@ -1,6 +1,6 @@
 from future.utils import viewitems
 from quark_core_api.data.storage import QueryOperators, LogicalOperator
-from quark_core_api.exceptions.storage_exceptions import InvalidExpressionException
+from quark_core_api.exceptions import InvalidExpressionException, InvalidOperationException
 
 
 
@@ -10,8 +10,6 @@ class QueryCommand(object):
 
     def execute(self, data):
         return self.query.filter(data)
-
-
 
 
 class ConditionExpression(object):
@@ -76,7 +74,7 @@ class Query(object):
 
     def _build(self, query_filter):
         if not isinstance(query_filter, dict):
-            raise ValueError("Invalid query filter provided." +
+            raise InvalidOperationException("Invalid query filter provided." +
                 "Query filter should be of type 'dict' not '{}'".format(type(query_filter).__name__))        
 
         self.filter = FilterExpression(QueryOperators.logical[LogicalOperator.AND])
@@ -108,30 +106,5 @@ class Query(object):
             for key, value in viewitems(filter):
                 operator, filter_value = self._parse_filter(value)
                 yield key, operator, filter_value
-
-    # def _query_operator(self, selector, field, filter_value):
-    #     def call(data):
-    #         if field is None:
-    #             actual_value = data
-    #         else:
-    #             actual_value = data[field]
-    #         return selector(actual_value, filter_value)
-    #     return call
-
-    # def _equality_filter(self, filter_value, operator):
-    #     selector = self._query_selector.get(operator)
-        
-    #     def func(data):
-    #         return selector(data, filter_value)
-        
-    #     return func
-
-    # def _conditional_filter(self, field, filter_value, operator):
-    #     selector = self._query_selector.get(operator)
-
-    #     def func(data):
-    #         return selector(data[field], filter_value)
-        
-    #     return func
 
 

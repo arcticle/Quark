@@ -1,6 +1,6 @@
 
 
-QUARKCONFIG_SCHEMA = {
+APPLICATION_SCHEMA = {
     "workspaces" : {
         "$required" : ["id", "name", "dir"],
         "$unique"   : ["id", "name", "dir"],

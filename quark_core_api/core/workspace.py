@@ -1,12 +1,13 @@
 import os
 from quark_core_api.context import WorkspaceContext, ExperimentContext
+from quark_core_api.common import ContextInitializer
 from quark_core_api.core import QuarkExperiment, Script
-
+from quark_core_api.exceptions import InvalidContextException
 
 class QuarkWorkspace(object):
     def __init__(self, id, name, context):
         if not isinstance(context, WorkspaceContext):
-            raise ValueError("Invalid context type has been provided")
+            raise InvalidContextException(context)
 
         self._id = id
         self._name = name
@@ -15,7 +16,6 @@ class QuarkWorkspace(object):
         self._experiments = {}
         self._scripts = {}
 
-        self._context.initialize_storage(name)
         self.__initialize__()
         
 
@@ -63,6 +63,9 @@ class QuarkWorkspace(object):
             return scr
 
     def __initialize__(self):
+        filename = "{}.quark".format(self._name)
+        self._context.create_storage(filename)
+
         for script_name in self._context.scripts:
             self._scripts[script_name] = self._create_script_object(script_name)
 
@@ -78,5 +81,6 @@ class QuarkWorkspace(object):
 
     def _create_experiment_object(self, experiment_name):
         xp_dir = self._get_experiment_location(experiment_name)
-        args = (experiment_name, self._scripts, ExperimentContext(xp_dir))
+        ctx = ExperimentContext(xp_dir, ContextInitializer.experiment)
+        args = (experiment_name, self._scripts, ctx)
         return QuarkExperiment(*args)

@@ -1,10 +1,12 @@
 import os, six, abc
 from copy import deepcopy
+from attrdict import AttrDict
 from future.utils import viewitems
 from future.builtins import super
 from app_settings import Config
 from quark_core_api.data.storage import CollectionObject, ComplexObject, KeyValueObject, Validator
-from quark_core_api.common import EventHandler
+from quark_core_api.common import DelayedEventHandler
+from quark_core_api.exceptions import InvalidOperationException
 
 class StorageObjectFactory(object):
     def __init__(self, object_types=None):
@@ -38,7 +40,7 @@ class StorageBase(object):
         self.__objects__ = []
         self._object_factory = StorageObjectFactory()
 
-        self.object_changed = EventHandler()
+        self.object_changed = DelayedEventHandler()
 
         self._create_objects(data, schema)
 
@@ -58,7 +60,8 @@ class StorageBase(object):
     def create_entry(self, data, schema=None):
         for object_name, value in viewitems(data):
             if object_name in self.__data__:
-                raise ValueError("Invalid data provided. Key already exists.")
+                raise InvalidOperationException(
+                    "Invalid data provided. Key already exists.")
             self.__data__[object_name] = value
         self._create_objects(data, schema)
 
@@ -72,6 +75,7 @@ class StorageBase(object):
             storage_object.on_change += self._on_object_change
             self.__objects__.append(object_name)
             setattr(self, object_name, storage_object)
+            self.object_changed(storage_object)
 
     def _on_object_change(self, sender, action=None):
         self.object_changed(self, changed_object=sender)
@@ -81,8 +85,10 @@ class StorageBase(object):
 
 
 class InMemoryStorage(StorageBase):
-    def __init__(self, data, schema=None):
-        super().__init__(data, schema=schema)
+    def __init__(self, name, data, schema=None):
+        super().__init__(AttrDict(data), schema=schema)
+
+        self.name = name
 
 
 class FileStorage(StorageBase):
@@ -107,44 +113,7 @@ class FileStorage(StorageBase):
             self._initialize(initializer)
             self._filestore.save_all()
 
-
-        # self._objects = []
-        # self._object_factory = StorageObjectFactory()
-        # self._create(self._filestore[self.name], schema)
         super().__init__(self._filestore[self.name], schema)
-
-    # @property
-    # def data(self):
-    #     return deepcopy(self._filestore[self.name])
-
-    # @property
-    # def entries(self):
-    #     return self._objects
-
-    # def create_entry(self, data, schema=None):
-    #     for object_name, value in viewitems(data):
-    #         if object_name in self._filestore[self.name]:
-    #             raise ValueError("Invalid data provided. Key already exists.")
-    #         self._filestore[self.name][object_name] = value
-    #     self._create_objects(data, schema)
-
-
-    # def __getitem__(self, key):
-    #     return getattr(self, key)
-
-    # def _create(self, data, schema):
-    #     for object_name in data:
-    #         if schema and object_name in schema:
-    #             validator = Validator(schema[object_name])
-    #         else:
-    #             validator = None
-    #         storage_object = self._object_factory.create(object_name, data, validator)
-    #         storage_object.on_change += self._on_change
-    #         self._objects.append(object_name)
-    #         setattr(self, object_name, storage_object)
-
-    # def _on_change(self, sender, action=None):
-    #     self._filestore.save_all()
 
     def _on_object_change(self, sender, action=None):
         self._filestore.save_all()

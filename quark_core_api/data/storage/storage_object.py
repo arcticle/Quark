@@ -83,7 +83,7 @@ class CollectionObject(StorageObject):
 
     def delete(self, obj):
         try:
-            item = self.find(obj)
+            item = self.find_one(obj)
             self.data.remove(item)
             self.on_change(self, action="delete")
         except Exception as e:
@@ -142,9 +142,18 @@ class ComplexObject(StorageObject):
             self.data[attr] = value
             setattr(self, attr, value)
             self.on_change(self, action="update")
+            return 1
         except:
             return -1
-        return 1
+
+    def delete(self, attr):
+        try:
+            del self.data[attr]
+            delattr(self, attr)
+            self.on_change(self, action="update")
+            return 1
+        except:
+            return -1
 
     def to_dict(self):
         return dict(self.data)

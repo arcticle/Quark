@@ -11,7 +11,7 @@ class Cache(Mapping):
 
         if args:
             if len(args) > 2:
-                raise Exception("Invalid number of argument have been provided for cache.")
+                raise Exception("Invalid number of arguments have been provided for the cache.")
             self._keys.insert(0, args[0])
             self._cache[args[0]] = args[1]
 
@@ -22,6 +22,10 @@ class Cache(Mapping):
                     continue
                 self._keys.insert(len(self._keys), key)
                 self._cache[key] = value
+
+    @property
+    def items(self):
+        return list(self._cache.values())
 
     def get(self, key):
         return self.__getitem__(key)

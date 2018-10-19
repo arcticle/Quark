@@ -1,4 +1,4 @@
-import os, copy
+import os, copy, itertools
 from future.utils import viewitems
 from quark_core_api.common import Cache
 
@@ -24,10 +24,17 @@ class Pipeline(object):
 
     @property
     def steps(self):
-        return [value for key, value in self._cache]
+        return list(itertools.chain.from_iterable(self._cache.items))
 
-    def add_step(self, script):
-        self._cache.add(script.name, script)
+    @property
+    def stages(self):
+        return [stage for stage, script in self._cache]
+
+    def add_step(self, stage, script):
+        if stage in self._cache:
+            self._cache[stage].append(script)
+        else:
+            self._cache[stage] = [script]
 
     def add_param(self, name, value):
         self._params[name] = value

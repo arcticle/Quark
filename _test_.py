@@ -1,45 +1,12 @@
-import copy
-# from quark.storage import StorageObjectFactory, Storage
-
-
-
-# data = {
-#     "repositories": [
-#         {"id":1, "name":"Repo-1", "dir":"c:/repos/repo1"},
-#         {"id":2, "name":"Repo-2", "dir":"c:/repos/repo2"},
-#         {"id":3, "name":"Repo-3", "dir":"c:/repos/repo3"}
-#     ],
-
-#     "user": {"name":"John Doe", "email":"john@doe.com"},
-
-#     "repo_limit" : 10,
-
-#     "tags" : [
-#         "Data Analytics 101",
-#         "Artificial Intelligence",
-#         "Arcticle",
-#         "Quark"
-#     ],
-
-#     "scores" : [100, 200, 300, 400]
-# }
-
-
-
-
-
-
-# storage = Storage(copy.deepcopy(data), StorageObjectFactory())
-# print(storage.objects)
-
-
-
-# from quark_core_api.context import Application
 from quark_core_api.core import QuarkApplication
+from quark_core_api.context import ApplicationContext
+from quark_core_api.common import ContextInitializer
 import json
+import os
 
-# app = Application()
-app = QuarkApplication()
+app_dir = os.path.expanduser("~\\")
+
+app = QuarkApplication(ApplicationContext(app_dir, ContextInitializer.application))
 
 location = "D:\\quark"
 
@@ -53,8 +20,8 @@ def create_xp(ws, name):
 def create_script(ws, name):
     return ws.create_script(name,"{} script text goes here...".format(name))
 
-def add_script(xp, name):
-    xp.add_script(name)
+def add_script(xp, stage, name):
+    xp.add_script(stage, name)
 
 def add_param(xp, name, value):
     xp.add_parameter(name, value)
@@ -66,10 +33,36 @@ def print_workspaces():
 
 
 # create_xp(app.workspaces[20181001131931], "LGBM_CV")
-# add_script(app.workspaces[20181001131931].experiments["LGBM_CV"], "preprocess")
-# add_script(app.workspaces[20181001131931].experiments["LGBM_CV"], "clean")
+# add_script(app.workspaces[20181001131931].experiments["LGBM_CV"], "prep", "preprocess")
+# add_script(app.workspaces[20181001131931].experiments["LGBM_CV"], "prep", "remove_nan")
+# add_script(app.workspaces[20181001131931].experiments["LGBM_CV"], "prep", "clean")
 
-steps = app.workspaces[20181001131931].experiments["LGBM_CV"].pipeline.steps
+pipeline = app.workspaces[20181001131931].experiments["LGBM_CV"].pipeline
 
-for s in steps:
+for s in pipeline.steps:
     print(s.name)
+
+for s in pipeline.stages:
+    print(s)
+
+
+
+
+
+
+# from quark_core_api.context import ApplicationContext, ContextInitializer
+
+# app_ctx_init = {
+#     "workspaces": [{"id":1, "name":"ws-1", "dir":"home"}]
+# }
+
+
+# def test_application_context():
+#     ctx = ApplicationContext(None, ContextInitializer(app_ctx_init, None))
+#     ctx.create_storage("app")
+#     print (ctx.workspaces[0])
+
+
+# test_application_context()
+
+
